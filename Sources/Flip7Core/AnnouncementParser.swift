@@ -11,7 +11,15 @@ public struct LineupAnnouncement: Equatable, Sendable {
 }
 
 public struct AnnouncementParser {
-    private static let removalWords: Set<String> = ["raus", "entfernen", "weg", "nicht"]
+    private static let removalWords: Set<String> = [
+        "raus", "rausnehmen", "rauswerfen", "entfernen", "streichen", "weg", "nicht",
+    ]
+
+    private static let lineupFillers: Set<String> = [
+        "hinzufugen", "hinzu", "dazu", "rein", "neu", "neue", "noch", "bitte", "ich", "wir", "mochte", "mochten",
+        "will", "wollen", "spielen", "spielt", "nehmen", "nimm", "kommt", "kommen", "heute", "jetzt",
+        "mal", "einmal", "sowie", "oder", "aber", "fur", "den", "dem", "des", "gegen", "ausserdem", "alle",
+    ]
 
     private static let fillers: Set<String> = [
         "und", "hat", "haben", "sich", "punkte", "punkt", "macht", "bekommt", "kriegt", "mit", "ist", "sind",
@@ -56,19 +64,24 @@ public struct AnnouncementParser {
         let matcher = NameMatcher(known) { $0 }
         var mentioned: [(name: PlayerName, joinedToPrevious: Bool)] = []
         var removals: [PlayerName] = []
+        var previousWasName = false
         var joinsNext = false
-        for token in tokenize(text) {
-            if removalWords.contains(token) {
+        for token in tokens(text) {
+            if removalWords.contains(token.key) {
                 while let last = mentioned.popLast() {
                     removals.append(last.name)
                     if !last.joinedToPrevious { break }
                 }
+                previousWasName = false
                 joinsNext = false
-            } else if token == "und" {
-                joinsNext = !mentioned.isEmpty
-            } else if !fillers.contains(token), GermanNumber.parse(token) == nil,
-                      let name = matcher.match(token) ?? PlayerName(token) {
+            } else if token.key == "und" {
+                joinsNext = previousWasName
+            } else if let name = lineupName(token, matcher: matcher) {
                 mentioned.append((name, joinsNext))
+                previousWasName = true
+                joinsNext = false
+            } else {
+                previousWasName = false
                 joinsNext = false
             }
         }
@@ -79,12 +92,31 @@ public struct AnnouncementParser {
         return LineupAnnouncement(additions: additions, removals: removals)
     }
 
-    static func tokenize(_ text: String) -> [String] {
-        PlayerName.normalize(text)
+    private static func lineupName(_ token: Token, matcher: NameMatcher<PlayerName>) -> PlayerName? {
+        guard !fillers.contains(token.key), !lineupFillers.contains(token.key), GermanNumber.parse(token.key) == nil else {
+            return nil
+        }
+        if let known = matcher.match(token.key) { return known }
+        guard token.raw.first?.isUppercase == true else { return nil }
+        return PlayerName(token.raw)
+    }
+
+    struct Token {
+        let raw: String
+        let key: String
+    }
+
+    static func tokens(_ text: String) -> [Token] {
+        text
             .replacingOccurrences(of: #"(\d)([^\d\s])"#, with: "$1 $2", options: .regularExpression)
             .replacingOccurrences(of: #"([^\d\s])(\d)"#, with: "$1 $2", options: .regularExpression)
             .components(separatedBy: CharacterSet.alphanumerics.inverted)
             .filter { !$0.isEmpty }
+            .map { Token(raw: $0, key: PlayerName.normalize($0)) }
+    }
+
+    static func tokenize(_ text: String) -> [String] {
+        tokens(text).map(\.key)
     }
 
     private func readNumber(_ tokens: [String], at index: Int) -> (Int, Int)? {

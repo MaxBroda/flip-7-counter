@@ -4,7 +4,7 @@ Kleine Mac-App zum Mitzählen bei [Flip 7](https://www.kosmos.de/de/flip-7_16854
 
 ## Bedienung
 
-- **Neues Spiel:** Die Spieler der letzten Partie sind vorausgewählt. Mit einem Klick auf einen Namen fliegt er raus. Weitere Namen tippen oder Leertaste halten und ansagen, z. B. „Christian, Martin, Jonathan raus“.
+- **Neues Spiel:** Die Spieler der letzten Partie sind vorausgewählt. Mit einem Klick auf einen Namen fliegt er raus. Weitere Namen tippen oder Leertaste halten und ansagen, z. B. „Christian und Martin hinzufügen, Jonathan raus“. Füllwörter werden ignoriert, neue Namen nur übernommen, wenn die Erkennung sie großschreibt.
 - **Runde erfassen:** Leertaste halten und sagen: „Max 5, Paul 0, Lisa 26“. Die Werte erscheinen als Entwurf und lassen sich per Klick korrigieren. **↩** bucht die Runde. Wer nicht genannt wurde, bekommt `–` (0 Punkte).
   - „Paul und Lisa 26“ gibt beiden 26 Punkte.
   - „null“, „verzockt“ und „raus“ zählen als 0.

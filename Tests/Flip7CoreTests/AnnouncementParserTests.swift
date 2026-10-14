@@ -49,9 +49,22 @@ import Testing
     }
 
     @Test func parsesNamesAndReusesKnownSpelling() {
-        let result = lineup("martin, Max und Florjan Kristian", known: ["Christian", "Florian"])
+        let result = lineup("Martin, max und Florjan kristian", known: ["Christian", "Florian", "Max"])
         #expect(result.add == ["Martin", "Max", "Florian", "Christian"])
         #expect(result.remove.isEmpty)
+    }
+
+    @Test(arguments: [
+        "Jonathan und Christian hinzufügen, Lisa raus",
+        "Jonathan und Christian hinzu. Lisa raus.",
+        "Jonathan und Christian dazu, Lisa bitte rausnehmen",
+        "Ich möchte Jonathan und Christian noch mit dazu nehmen und Lisa raus",
+        "Bitte Jonathan und Christian neu rein, Lisa raus",
+    ])
+    func ignoresGermanFillerWords(sentence: String) {
+        let result = lineup(sentence, known: ["Lisa", "Max"])
+        #expect(result.add == ["Jonathan", "Christian"])
+        #expect(result.remove == ["Lisa"])
     }
 
     @Test func rausRemovesOnlyTheNameBeforeIt() {
