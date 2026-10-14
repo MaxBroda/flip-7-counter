@@ -32,6 +32,8 @@ final class SpeechRecorder {
         guard await Self.requestMicrophone() else { return problem = .microphoneDenied }
         do {
             _ = try await Self.makeTranscriber()
+            _ = engine.inputNode
+            engine.prepare()
         } catch let error as SpeechProblem {
             problem = error
         } catch {
@@ -71,6 +73,7 @@ final class SpeechRecorder {
             stopRequested = isStarting
             return transcript
         }
+        try? await Task.sleep(for: .milliseconds(350))
         engine.stop()
         engine.inputNode.removeTap(onBus: 0)
         self.session = nil
@@ -104,6 +107,7 @@ private final class Session: @unchecked Sendable {
     private let converter: AnalyzerInputConverter
     private let input: AsyncStream<AnalyzerInput>.Continuation
     private let collector: Task<String, Never>
+    private var micFormat: AVAudioFormat?
 
     init(transcriber: DictationTranscriber, hints: [String], onUpdate: @escaping @MainActor (String) -> Void) async throws {
         analyzer = SpeechAnalyzer(modules: [transcriber], options: .init(priority: .userInitiated, modelRetention: .processLifetime))
@@ -126,7 +130,7 @@ private final class Session: @unchecked Sendable {
                     await onUpdate(combined)
                 }
             } catch {}
-            return finalized.joined(separator: " ")
+            return (finalized + [volatile]).filter { !$0.isEmpty }.joined(separator: " ")
         }
         let context = AnalysisContext()
         context.contextualStrings[.general] = hints
@@ -135,16 +139,39 @@ private final class Session: @unchecked Sendable {
     }
 
     var tap: AVAudioNodeTapBlock {
-        { [converter, input] buffer, time in
-            (try? converter.convert(buffer, at: nil))?.forEach { input.yield($0) }
+        { [self] buffer, _ in
+            if micFormat == nil {
+                micFormat = buffer.format
+                feed(silence(seconds: 0.5, format: buffer.format))
+            }
+            feed(buffer)
         }
     }
 
+    // The transcriber drops speech at the very start of a stream and holds back the last word
+    // until more audio follows, so every utterance is padded with silence on both ends.
     func finish() async -> String {
+        if let micFormat { feed(silence(seconds: 0.8, format: micFormat)) }
         (try? converter.flush())?.forEach { input.yield($0) }
         input.finish()
         try? await analyzer.finalizeAndFinishThroughEndOfInput()
         return await collector.value
+    }
+
+    private func feed(_ buffer: AVAudioPCMBuffer?) {
+        guard let buffer else { return }
+        (try? converter.convert(buffer, at: nil))?.forEach { input.yield($0) }
+    }
+
+    private func silence(seconds: Double, format: AVAudioFormat) -> AVAudioPCMBuffer? {
+        guard let buffer = AVAudioPCMBuffer(pcmFormat: format, frameCapacity: AVAudioFrameCount(format.sampleRate * seconds)),
+              let channels = buffer.floatChannelData
+        else { return nil }
+        buffer.frameLength = buffer.frameCapacity
+        for channel in 0..<Int(format.channelCount) {
+            channels[channel].update(repeating: 0, count: Int(buffer.frameLength))
+        }
+        return buffer
     }
 
     func cancel() async {
