@@ -74,6 +74,7 @@ private struct TopBar: View {
                     .foregroundStyle(Theme.navy)
             }
             .buttonStyle(.plain)
+            .hoverLift(1.15)
         }
         .padding(.horizontal, 24)
         .padding(.vertical, 10)
@@ -82,19 +83,34 @@ private struct TopBar: View {
     }
 
     private func tab(_ title: String, systemImage: String, screen: AppModel.Screen) -> some View {
-        let active = model.screen == screen
-        return Button {
+        TabButton(title: title, systemImage: systemImage, isActive: model.screen == screen) {
             withAnimation(.spring(duration: 0.3)) { model.screen = screen }
-        } label: {
+        }
+    }
+}
+
+private struct TabButton: View {
+    let title: String
+    let systemImage: String
+    let isActive: Bool
+    let action: () -> Void
+    @State private var hovering = false
+
+    var body: some View {
+        Button(action: action) {
             Label(title, systemImage: systemImage)
                 .font(Theme.display(17))
                 .tracking(1)
                 .foregroundStyle(Theme.navy)
                 .padding(.horizontal, 14)
                 .padding(.vertical, 6)
-                .background(Pill().fill(active ? Theme.yellow : .clear))
-                .overlay(Pill().strokeBorder(Theme.navy, lineWidth: active ? 2.5 : 0))
+                .background(Pill().fill(isActive ? Theme.yellow : hovering ? Theme.yellow.opacity(0.45) : .clear))
+                .overlay(Pill().strokeBorder(Theme.navy, lineWidth: isActive ? 2.5 : hovering ? 1.5 : 0))
+                .contentShape(Pill())
         }
         .buttonStyle(.plain)
+        .onHover { hovering = $0 }
+        .hoverLift(1.04)
+        .animation(.easeOut(duration: 0.15), value: hovering)
     }
 }

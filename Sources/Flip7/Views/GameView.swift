@@ -52,6 +52,7 @@ struct GameView: View {
             .buttonStyle(.plain)
             .menuIndicator(.hidden)
             .fixedSize()
+            .hoverLift(1.15)
         }
     }
 

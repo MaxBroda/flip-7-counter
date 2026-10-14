@@ -71,6 +71,7 @@ private struct Leaderboard: View {
                     .buttonStyle(.plain)
                     .menuIndicator(.hidden)
                     .fixedSize()
+                    .hoverLift(1.2)
                 }
                 .font(Theme.rounded(15, .bold))
                 .foregroundStyle(Theme.navy)
@@ -142,6 +143,7 @@ private struct GameCard: View {
                 }
             }
         }
+        .hoverLift(1.01)
         .contextMenu {
             Button("Aus Historie löschen", role: .destructive) { model.deleteFromHistory(game.id) }
         }

@@ -5,7 +5,14 @@ public struct ScoreAnnouncement: Equatable, Sendable {
     public let unrecognized: [String]
 }
 
+public struct LineupAnnouncement: Equatable, Sendable {
+    public let additions: [PlayerName]
+    public let removals: [PlayerName]
+}
+
 public struct AnnouncementParser {
+    private static let removalWords: Set<String> = ["raus", "entfernen", "weg", "nicht"]
+
     private static let fillers: Set<String> = [
         "und", "hat", "haben", "sich", "punkte", "punkt", "macht", "bekommt", "kriegt", "mit", "ist", "sind",
         "der", "die", "das", "bei", "auch", "plus", "runde", "also", "ah", "ahm", "ok", "okay", "dann", "spieler",
@@ -45,14 +52,31 @@ public struct AnnouncementParser {
         return ScoreAnnouncement(scores: scores, unrecognized: unrecognized)
     }
 
-    public static func parseNames(_ text: String, known: [PlayerName]) -> [PlayerName] {
+    public static func parseLineup(_ text: String, known: [PlayerName]) -> LineupAnnouncement {
         let matcher = NameMatcher(known) { $0 }
-        var names: [PlayerName] = []
-        for token in tokenize(text) where !fillers.contains(token) && GermanNumber.parse(token) == nil {
-            guard let name = matcher.match(token) ?? PlayerName(token), !names.contains(name) else { continue }
-            names.append(name)
+        var mentioned: [(name: PlayerName, joinedToPrevious: Bool)] = []
+        var removals: [PlayerName] = []
+        var joinsNext = false
+        for token in tokenize(text) {
+            if removalWords.contains(token) {
+                while let last = mentioned.popLast() {
+                    removals.append(last.name)
+                    if !last.joinedToPrevious { break }
+                }
+                joinsNext = false
+            } else if token == "und" {
+                joinsNext = !mentioned.isEmpty
+            } else if !fillers.contains(token), GermanNumber.parse(token) == nil,
+                      let name = matcher.match(token) ?? PlayerName(token) {
+                mentioned.append((name, joinsNext))
+                joinsNext = false
+            }
         }
-        return names
+        var additions: [PlayerName] = []
+        for entry in mentioned where !additions.contains(entry.name) && !removals.contains(entry.name) {
+            additions.append(entry.name)
+        }
+        return LineupAnnouncement(additions: additions, removals: removals)
     }
 
     static func tokenize(_ text: String) -> [String] {

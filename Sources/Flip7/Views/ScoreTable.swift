@@ -88,6 +88,7 @@ private struct ScoreCell: View {
     let onCorrect: (Points) -> Void
 
     @State private var editing = false
+    @State private var hovering = false
     @State private var text = ""
 
     var body: some View {
@@ -106,9 +107,13 @@ private struct ScoreCell: View {
             }
             .frame(minWidth: 90, maxWidth: .infinity)
             .padding(.vertical, 6)
+            .background(RoundedRectangle(cornerRadius: 8).fill(Theme.yellow.opacity(editable && hovering ? 0.35 : 0)))
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
+        .onHover { hovering = $0 }
+        .pointerStyle(editable ? .link : nil)
+        .animation(.easeOut(duration: 0.12), value: hovering)
         .popover(isPresented: $editing) {
             VStack(spacing: 10) {
                 Text("Punkte dieser Runde").font(Theme.rounded(13, .heavy)).foregroundStyle(Theme.navy)

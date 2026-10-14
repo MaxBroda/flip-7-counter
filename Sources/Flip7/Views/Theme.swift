@@ -138,20 +138,58 @@ struct ChunkyButtonStyle: ButtonStyle {
     var size: CGFloat = 18
 
     func makeBody(configuration: Configuration) -> some View {
-        configuration.label
+        ChunkyButton(label: configuration.label, isPressed: configuration.isPressed, fill: fill, size: size)
+    }
+}
+
+private struct ChunkyButton<Label: View>: View {
+    let label: Label
+    let isPressed: Bool
+    let fill: Color
+    let size: CGFloat
+
+    @Environment(\.isEnabled) private var isEnabled
+    @State private var hovering = false
+
+    private var lift: CGFloat { isPressed ? 3 : (hovering && isEnabled ? -2 : 0) }
+
+    var body: some View {
+        label
             .font(Theme.display(size))
             .tracking(1.2)
             .foregroundStyle(Theme.navy)
             .padding(.horizontal, size * 1.1)
             .padding(.vertical, size * 0.5)
             .background {
-                RoundedRectangle(cornerRadius: 12).fill(Theme.navy).offset(y: configuration.isPressed ? 1 : 4)
+                RoundedRectangle(cornerRadius: 12).fill(Theme.navy).offset(y: 4)
                 RoundedRectangle(cornerRadius: 12).fill(fill)
+                    .brightness(hovering && isEnabled ? 0.04 : 0)
                     .overlay(RoundedRectangle(cornerRadius: 12).stroke(Theme.navy, lineWidth: 2.5))
-                    .offset(y: configuration.isPressed ? 3 : 0)
+                    .offset(y: lift)
             }
-            .offset(y: configuration.isPressed ? 3 : 0)
-            .animation(.spring(duration: 0.15), value: configuration.isPressed)
+            .offset(y: lift)
+            .onHover { hovering = $0 }
+            .pointerStyle(isEnabled ? .link : nil)
+            .animation(.spring(duration: 0.2, bounce: 0.4), value: lift)
+    }
+}
+
+struct HoverLift: ViewModifier {
+    var scale: CGFloat = 1.06
+    @State private var hovering = false
+
+    func body(content: Content) -> some View {
+        content
+            .scaleEffect(hovering ? scale : 1)
+            .onHover { hovering = $0 }
+            .pointerStyle(.link)
+            .animation(.spring(duration: 0.25, bounce: 0.5), value: hovering)
+    }
+}
+
+extension View {
+    func hoverLift(_ scale: CGFloat = 1.06) -> some View {
+        modifier(HoverLift(scale: scale))
     }
 }
 

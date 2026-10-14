@@ -1,8 +1,10 @@
 struct NameMatcher<Candidate> {
     private let candidates: [(candidate: Candidate, key: String)]
+    private let name: (Candidate) -> String
 
-    init(_ candidates: [Candidate], name: (Candidate) -> PlayerName) {
+    init(_ candidates: [Candidate], name: @escaping (Candidate) -> PlayerName) {
         self.candidates = candidates.map { ($0, name($0).key) }
+        self.name = { name($0).key }
     }
 
     var hasMultiWordNames: Bool { candidates.contains { $0.key.contains(" ") } }
@@ -13,7 +15,8 @@ struct NameMatcher<Candidate> {
         let scored = candidates.compactMap { entry in score(token, against: entry.key).map { (entry.candidate, $0) } }
         guard let best = scored.map(\.1).min() else { return nil }
         let winners = scored.filter { $0.1 == best }
-        return winners.count == 1 ? winners[0].0 : nil
+        let distinctKeys = Set(winners.map { name($0.0) })
+        return distinctKeys.count == 1 ? winners[0].0 : nil
     }
 
     private func score(_ token: String, against key: String) -> Int? {

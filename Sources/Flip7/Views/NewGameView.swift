@@ -18,7 +18,7 @@ struct NewGameView: View {
                     }
                     .frame(maxWidth: .infinity, alignment: .leading)
                 }
-                VoiceHint(text: "\(model.preferences.hotkey.label) halten und Namen sagen – z. B. „Martin Max Florian Christian“")
+                VoiceHint(text: "\(model.preferences.hotkey.label) halten und Namen sagen – z. B. „Christian, Martin, Jonathan raus“")
                 HStack(spacing: 16) {
                     Button("Los geht's!", action: model.startGame)
                         .buttonStyle(ChunkyButtonStyle(size: 24))
@@ -39,17 +39,9 @@ struct NewGameView: View {
     private var lineup: some View {
         Group {
             if model.lineup.isEmpty {
-                HStack(spacing: 14) {
-                    Text("Noch keine Spieler. Tippe Namen ein oder sag sie an.")
-                        .font(Theme.rounded(15, .medium))
-                        .foregroundStyle(Theme.navy.opacity(0.55))
-                    if !model.lastLineup.isEmpty {
-                        Button("Wie letztes Mal: \(model.lastLineup.map(\.value).joined(separator: ", "))") {
-                            withAnimation(.spring) { model.useLastLineup() }
-                        }
-                        .buttonStyle(ChunkyButtonStyle(fill: Theme.mint, size: 13))
-                    }
-                }
+                Text("Noch keine Spieler. Tippe Namen ein oder sag sie an.")
+                    .font(Theme.rounded(15, .medium))
+                    .foregroundStyle(Theme.navy.opacity(0.55))
             } else {
                 FlowLayout(spacing: 10) {
                     ForEach(Array(model.lineup.enumerated()), id: \.element) { index, name in
@@ -57,18 +49,6 @@ struct NewGameView: View {
                             withAnimation(.spring) { model.removeFromLineup(name) }
                         }
                         .transition(.scale.combined(with: .opacity))
-                    }
-                    if model.lineup.count > 2 {
-                        Button {
-                            withAnimation(.spring) { model.shuffleLineup() }
-                        } label: {
-                            Label("Mischen", systemImage: "shuffle")
-                        }
-                        .buttonStyle(.plain)
-                        .font(Theme.rounded(13))
-                        .foregroundStyle(Theme.navy.opacity(0.6))
-                        .padding(.leading, 6)
-                        .padding(.top, 8)
                     }
                 }
             }
@@ -101,13 +81,9 @@ struct NewGameView: View {
                 .foregroundStyle(Theme.navy.opacity(0.5))
             FlowLayout(spacing: 8) {
                 ForEach(model.suggestions, id: \.self) { name in
-                    Button("+ \(name.value)") { withAnimation(.spring) { model.addToLineup(name.value) } }
-                        .buttonStyle(.plain)
-                        .font(Theme.rounded(14))
-                        .foregroundStyle(Theme.navy)
-                        .padding(.horizontal, 12)
-                        .padding(.vertical, 6)
-                        .background(Pill().strokeBorder(Theme.navy.opacity(0.35), style: StrokeStyle(lineWidth: 1.5, dash: [4, 3])))
+                    SuggestionChip(name: name.value) {
+                        withAnimation(.spring) { model.addToLineup(name.value) }
+                    }
                 }
             }
         }
@@ -145,7 +121,33 @@ private struct PlayerChip: View {
         }
         .buttonStyle(.plain)
         .onHover { hovering = $0 }
+        .hoverLift()
         .accessibilityLabel("\(name) entfernen")
+    }
+}
+
+private struct SuggestionChip: View {
+    let name: String
+    let action: () -> Void
+    @State private var hovering = false
+
+    var body: some View {
+        Button(action: action) {
+            Text("+ \(name)")
+                .font(Theme.rounded(14, hovering ? .heavy : .bold))
+                .foregroundStyle(Theme.navy)
+                .padding(.horizontal, 12)
+                .padding(.vertical, 6)
+                .background(Pill().fill(hovering ? Theme.mint : .clear))
+                .overlay(
+                    Pill().strokeBorder(Theme.navy.opacity(hovering ? 1 : 0.35), style: StrokeStyle(lineWidth: hovering ? 2 : 1.5, dash: hovering ? [] : [4, 3]))
+                )
+                .contentShape(Pill())
+        }
+        .buttonStyle(.plain)
+        .onHover { hovering = $0 }
+        .hoverLift()
+        .animation(.easeOut(duration: 0.15), value: hovering)
     }
 }
 
@@ -177,6 +179,7 @@ struct VoiceHint: View {
         .background(RoundedRectangle(cornerRadius: 16).fill(speech.isListening ? Theme.yellow.opacity(0.45) : Theme.mint.opacity(0.35)))
         .overlay(RoundedRectangle(cornerRadius: 16).stroke(Theme.navy.opacity(0.25), style: StrokeStyle(lineWidth: 2, dash: [6, 4])))
         .contentShape(Rectangle())
+        .pointerStyle(.link)
         .gesture(
             DragGesture(minimumDistance: 0)
                 .onChanged { _ in if !speech.isListening { model.beginListening() } }

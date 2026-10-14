@@ -44,8 +44,8 @@ final class HotkeyMonitor {
             onRelease()
             return nil
         }
-        if editor(in: event.window) != nil {
-            guard !yieldsToTextInput() else { return event }
+        if let editor = editor(in: event.window) {
+            guard editor.string.isEmpty || !yieldsToTextInput() else { return event }
             event.window?.makeFirstResponder(nil)
         }
         if !event.isARepeat && !isHeld {

@@ -6,7 +6,7 @@ public struct PlayerName: Hashable, Codable, Sendable, CustomStringConvertible {
     public init?(_ raw: String) {
         let collapsed = raw
             .replacingOccurrences(of: #"\s+"#, with: " ", options: .regularExpression)
-            .trimmingCharacters(in: .whitespacesAndNewlines)
+            .trimmingCharacters(in: .whitespacesAndNewlines.union(.punctuationCharacters).union(.symbols))
         guard !collapsed.isEmpty else { return nil }
         value = collapsed.prefix(1).uppercased() + collapsed.dropFirst()
     }

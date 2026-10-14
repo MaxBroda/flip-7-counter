@@ -43,9 +43,46 @@ import Testing
         #expect(scores("Max5 Paul:12.") == ["Max": 5, "Paul": 12])
     }
 
+    private func lineup(_ text: String, known: [String]) -> (add: [String], remove: [String]) {
+        let result = AnnouncementParser.parseLineup(text, known: known.compactMap(PlayerName.init))
+        return (result.additions.map(\.value), result.removals.map(\.value))
+    }
+
     @Test func parsesNamesAndReusesKnownSpelling() {
-        let known = ["Christian", "Florian"].compactMap(PlayerName.init)
-        let names = AnnouncementParser.parseNames("martin, Max und Florjan Kristian", known: known)
-        #expect(names.map(\.value) == ["Martin", "Max", "Florian", "Christian"])
+        let result = lineup("martin, Max und Florjan Kristian", known: ["Christian", "Florian"])
+        #expect(result.add == ["Martin", "Max", "Florian", "Christian"])
+        #expect(result.remove.isEmpty)
+    }
+
+    @Test func rausRemovesOnlyTheNameBeforeIt() {
+        let result = lineup("Christian und Martin Jonathan raus", known: ["Florian", "Jonathan", "Max"])
+        #expect(result.add == ["Christian", "Martin"])
+        #expect(result.remove == ["Jonathan"])
+    }
+
+    @Test func rausInTheMiddle() {
+        let result = lineup("Christian, Jonatan raus, Martin", known: ["Jonathan"])
+        #expect(result.add == ["Christian", "Martin"])
+        #expect(result.remove == ["Jonathan"])
+    }
+
+    @Test func rausRemovesNamesJoinedWithUnd() {
+        let result = lineup("Christian, Jonathan und Max raus", known: ["Jonathan", "Max"])
+        #expect(result.add == ["Christian"])
+        #expect(Set(result.remove) == ["Jonathan", "Max"])
+    }
+}
+
+@Suite struct LineupRegressionTests {
+    @Test func rausWorksWhenNameIsBothInLineupAndKnown() {
+        let jonathan = PlayerName("Jonathan.")!
+        let result = AnnouncementParser.parseLineup("Christian und Martin Jonathan raus", known: [jonathan, jonathan])
+        #expect(result.removals == [jonathan])
+    }
+
+    @Test func playerNameDropsSurroundingPunctuation() {
+        #expect(PlayerName("Jonathan.")?.value == "Jonathan")
+        #expect(PlayerName(" „Max“, ")?.value == "Max")
+        #expect(PlayerName("...") == nil)
     }
 }

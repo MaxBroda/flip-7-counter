@@ -39,6 +39,7 @@ final class AppModel {
             alert = "Spielstände konnten nicht gelesen werden. Die alte Datei liegt unter \(backup?.path ?? "–")."
         }
         game = library.current
+        if game == nil { lineup = lastLineup }
         hotkeys.onPress = { [weak self] in self?.beginListening() }
         hotkeys.onRelease = { [weak self] in self?.endListening() }
         hotkeys.yieldsToTextInput = { [weak self] in self?.game == nil }
@@ -75,14 +76,6 @@ final class AppModel {
         lineup.removeAll { $0 == name }
     }
 
-    func moveInLineup(from source: IndexSet, to destination: Int) {
-        lineup.move(fromOffsets: source, toOffset: destination)
-    }
-
-    func shuffleLineup() {
-        lineup.shuffle()
-    }
-
     func startGame() {
         do {
             let game = try Game(names: lineup, target: preferences.targetScore)
@@ -105,13 +98,10 @@ final class AppModel {
         startGame()
     }
 
-    func useLastLineup() {
-        lineup = lastLineup
-    }
-
     func closeGame() {
         isCelebrating = false
         game = nil
+        lineup = lastLineup
         draft = RoundDraft()
         unrecognized = []
     }
@@ -221,8 +211,9 @@ final class AppModel {
             draft.merge(announcement)
             unrecognized = announcement.unrecognized
         } else {
-            AnnouncementParser.parseNames(transcript, known: knownNames)
-                .forEach { addToLineup($0.value) }
+            let announcement = AnnouncementParser.parseLineup(transcript, known: lineup + knownNames)
+            announcement.additions.forEach { addToLineup($0.value) }
+            announcement.removals.forEach(removeFromLineup)
         }
     }
 
