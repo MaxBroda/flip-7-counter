@@ -104,6 +104,22 @@ import Testing
         #expect(library.knownNames.contains(paul))
     }
 
+    @Test func highestWinTracksBestWinningTotal() throws {
+        let library = Library(games: [
+            try finishedGame(["Max", "Paul"], [20, 5], at: .distantPast),
+            try finishedGame(["Max", "Paul"], [36, 12], at: .now),
+            try finishedGame(["Max", "Paul"], [3, 15], at: .now),
+        ])
+        let stats = Dictionary(uniqueKeysWithValues: library.leaderboard.map { ($0.name.value, $0) })
+        #expect(stats["Max"]?.highestWin == 36)
+        #expect(stats["Paul"]?.highestWin == 15)
+    }
+
+    @Test func highestWinIsNilWithoutWins() throws {
+        let library = Library(games: [try finishedGame(["Max", "Paul"], [20, 5], at: .now)])
+        #expect(library.leaderboard.first { $0.name.value == "Paul" }?.highestWin == nil)
+    }
+
     @Test func clearHistoryKeepsRunningGame() throws {
         let running = try Game(names: ["A", "B"].compactMap(PlayerName.init), target: 200)
         var library = Library(games: [try finishedGame(["Max", "Paul"], [20, 5], at: .now), running])

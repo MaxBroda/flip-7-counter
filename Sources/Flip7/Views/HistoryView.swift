@@ -47,7 +47,7 @@ private struct Leaderboard: View {
     var body: some View {
         Grid(alignment: .leading, horizontalSpacing: 18, verticalSpacing: 10) {
             GridRow {
-                ForEach(["", "Spieler", "Spiele", "Siege", "Quote", "Beste Runde", "Ø Runde", "Verzockt", ""], id: \.self) { title in
+                ForEach(["", "Spieler", "Spiele", "Siege", "Quote", "Höchster Sieg", "Beste Runde", "Ø Runde", "Verzockt", ""], id: \.self) { title in
                     Text(title).font(Theme.rounded(12, .heavy)).foregroundStyle(Theme.navy.opacity(0.5))
                 }
             }
@@ -58,6 +58,7 @@ private struct Leaderboard: View {
                     Text("\(stat.gamesPlayed)")
                     Text("\(stat.wins)").font(Theme.display(18))
                     Text(stat.winRate.formatted(.percent.precision(.fractionLength(0))))
+                    HighestWin(value: stat.highestWin, isRecord: stat.highestWin != nil && stat.highestWin == record)
                     Text("\(stat.bestRound)")
                     Text(stat.averageRound.formatted(.number.precision(.fractionLength(1))))
                     Text(stat.bustRate.formatted(.percent.precision(.fractionLength(0)))).foregroundStyle(Theme.coral)
@@ -98,8 +99,28 @@ private struct Leaderboard: View {
         }
     }
 
+    private var record: Int? { stats.compactMap(\.highestWin).max() }
+
     private func medal(_ index: Int) -> String {
         ["🥇", "🥈", "🥉"].indices.contains(index) ? ["🥇", "🥈", "🥉"][index] : "\(index + 1)."
+    }
+}
+
+private struct HighestWin: View {
+    let value: Int?
+    let isRecord: Bool
+
+    var body: some View {
+        HStack(spacing: 4) {
+            Text(value.map(String.init) ?? "–")
+                .font(isRecord ? Theme.display(18) : Theme.rounded(15, .bold))
+            if isRecord {
+                Text("⭐️").font(.system(size: 13))
+            }
+        }
+        .padding(.horizontal, isRecord ? 8 : 0)
+        .padding(.vertical, isRecord ? 2 : 0)
+        .background(Pill().fill(isRecord ? Theme.yellow : .clear))
     }
 }
 

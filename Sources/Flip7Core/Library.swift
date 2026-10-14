@@ -6,6 +6,7 @@ public struct PlayerStats: Identifiable, Hashable, Sendable {
     public let gamesPlayed: Int
     public let wins: Int
     public let bestRound: Int
+    public let highestWin: Int?
     public let averageRound: Double
     public let bustRate: Double
 
@@ -79,6 +80,7 @@ public struct Library: Codable, Sendable {
         var rounds: [PlayerName: [Int]] = [:]
         var played: [PlayerName: Int] = [:]
         var wins: [PlayerName: Int] = [:]
+        var highestWin: [PlayerName: Int] = [:]
         for game in finished {
             for player in game.players where counts(game, for: player.name) {
                 played[player.name, default: 0] += 1
@@ -86,6 +88,7 @@ public struct Library: Codable, Sendable {
             }
             if case .finished(let winner) = game.status, counts(game, for: winner.name) {
                 wins[winner.name, default: 0] += 1
+                highestWin[winner.name] = max(highestWin[winner.name] ?? 0, game.total(of: winner))
             }
         }
         for reset in resets where reset.kind == .zeroed && played[reset.name] == nil {
@@ -98,6 +101,7 @@ public struct Library: Codable, Sendable {
                 gamesPlayed: count,
                 wins: wins[name] ?? 0,
                 bestRound: scores.max() ?? 0,
+                highestWin: highestWin[name],
                 averageRound: scores.isEmpty ? 0 : Double(scores.reduce(0, +)) / Double(scores.count),
                 bustRate: scores.isEmpty ? 0 : Double(scores.filter { $0 == 0 }.count) / Double(scores.count)
             )
