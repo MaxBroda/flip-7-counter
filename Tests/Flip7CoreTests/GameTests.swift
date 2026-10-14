@@ -16,7 +16,7 @@ import Testing
     }
 
     @Test func accumulatesAndTreatsMissingAsBust() throws {
-        var game = try makeGame(["Max", "Paul", "Lisa"])
+        var game = try makeGame(["Max", "Oskar", "Mila"])
         game.book(draft(game, [10, 15, 8]))
         game.book(draft(game, [2, 25, nil]))
         #expect(game.players.map { game.total(of: $0) } == [12, 40, 8])
@@ -25,17 +25,17 @@ import Testing
     }
 
     @Test func overshootRoundRanksByTotal() throws {
-        var game = try makeGame(["Max", "Florian", "Christian"])
+        var game = try makeGame(["Max", "Valentin", "Kasimir"])
         game.book(draft(game, [187, 176, 165]))
         let status = game.book(draft(game, [14, 40, 0]))
         #expect(status == .finished(winner: game.players[1]))
-        #expect(game.standings.map(\.player.name.value) == ["Florian", "Max", "Christian"])
+        #expect(game.standings.map(\.player.name.value) == ["Valentin", "Max", "Kasimir"])
         #expect(game.standings.map(\.total) == [216, 201, 165])
         #expect(game.isFinished)
     }
 
     @Test func tieOnTopRequiresAnotherRound() throws {
-        var game = try makeGame(["Max", "Paul"])
+        var game = try makeGame(["Max", "Oskar"])
         let status = game.book(draft(game, [200, 200]))
         #expect(status == .tieBreak(leaders: game.players))
         #expect(!game.isFinished)
@@ -50,7 +50,7 @@ import Testing
     }
 
     @Test func undoReopensFinishedGame() throws {
-        var game = try makeGame(["Max", "Paul"], target: 50)
+        var game = try makeGame(["Max", "Oskar"], target: 50)
         game.book(draft(game, [60, 10]))
         #expect(game.isFinished)
         game.undoLastRound()
@@ -65,7 +65,7 @@ import Testing
     }
 
     @Test func leaderboardCountsWins() throws {
-        var game = try makeGame(["Max", "Paul"], target: 20)
+        var game = try makeGame(["Max", "Oskar"], target: 20)
         game.book(draft(game, [25, 0]))
         let stats = Library(games: [game]).leaderboard
         #expect(stats.first?.name.value == "Max")
@@ -85,7 +85,7 @@ import Testing
 
     @Test func resetZeroesStatsButKeepsPlayer() throws {
         let max = PlayerName("Max")!
-        var library = Library(games: [try finishedGame(["Max", "Paul"], [20, 5], at: .distantPast)])
+        var library = Library(games: [try finishedGame(["Max", "Oskar"], [20, 5], at: .distantPast)])
         library.resetStats(of: max)
         let stats = try #require(library.leaderboard.first { $0.name == max })
         #expect(stats.gamesPlayed == 0)
@@ -94,35 +94,35 @@ import Testing
     }
 
     @Test func removeHidesPlayerUntilNextGame() throws {
-        let paul = PlayerName("Paul")!
-        var library = Library(games: [try finishedGame(["Max", "Paul"], [20, 5], at: .distantPast)])
-        library.removePlayer(paul)
-        #expect(!library.leaderboard.contains { $0.name == paul })
-        #expect(!library.knownNames.contains(paul))
-        library.save(try finishedGame(["Paul", "Max"], [30, 0], at: .now.addingTimeInterval(5)))
-        #expect(library.leaderboard.first { $0.name == paul }?.wins == 1)
-        #expect(library.knownNames.contains(paul))
+        let oskar = PlayerName("Oskar")!
+        var library = Library(games: [try finishedGame(["Max", "Oskar"], [20, 5], at: .distantPast)])
+        library.removePlayer(oskar)
+        #expect(!library.leaderboard.contains { $0.name == oskar })
+        #expect(!library.knownNames.contains(oskar))
+        library.save(try finishedGame(["Oskar", "Max"], [30, 0], at: .now.addingTimeInterval(5)))
+        #expect(library.leaderboard.first { $0.name == oskar }?.wins == 1)
+        #expect(library.knownNames.contains(oskar))
     }
 
     @Test func highestWinTracksBestWinningTotal() throws {
         let library = Library(games: [
-            try finishedGame(["Max", "Paul"], [20, 5], at: .distantPast),
-            try finishedGame(["Max", "Paul"], [36, 12], at: .now),
-            try finishedGame(["Max", "Paul"], [3, 15], at: .now),
+            try finishedGame(["Max", "Oskar"], [20, 5], at: .distantPast),
+            try finishedGame(["Max", "Oskar"], [36, 12], at: .now),
+            try finishedGame(["Max", "Oskar"], [3, 15], at: .now),
         ])
         let stats = Dictionary(uniqueKeysWithValues: library.leaderboard.map { ($0.name.value, $0) })
         #expect(stats["Max"]?.highestWin == 36)
-        #expect(stats["Paul"]?.highestWin == 15)
+        #expect(stats["Oskar"]?.highestWin == 15)
     }
 
     @Test func highestWinIsNilWithoutWins() throws {
-        let library = Library(games: [try finishedGame(["Max", "Paul"], [20, 5], at: .now)])
-        #expect(library.leaderboard.first { $0.name.value == "Paul" }?.highestWin == nil)
+        let library = Library(games: [try finishedGame(["Max", "Oskar"], [20, 5], at: .now)])
+        #expect(library.leaderboard.first { $0.name.value == "Oskar" }?.highestWin == nil)
     }
 
     @Test func clearHistoryKeepsRunningGame() throws {
         let running = try Game(names: ["A", "B"].compactMap(PlayerName.init), target: 200)
-        var library = Library(games: [try finishedGame(["Max", "Paul"], [20, 5], at: .now), running])
+        var library = Library(games: [try finishedGame(["Max", "Oskar"], [20, 5], at: .now), running])
         library.clearHistory()
         #expect(library.games.map(\.id) == [running.id])
         #expect(library.leaderboard.isEmpty)

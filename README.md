@@ -4,13 +4,14 @@ Kleine Mac-App zum Mitzählen bei [Flip 7](https://www.kosmos.de/de/flip-7_16854
 
 ## Bedienung
 
-- **Neues Spiel:** Die Spieler der letzten Partie sind vorausgewählt. Mit einem Klick auf einen Namen fliegt er raus. Weitere Namen tippen oder Leertaste halten und ansagen, z. B. „Christian und Martin hinzufügen, Jonathan raus“. Füllwörter werden ignoriert, neue Namen nur übernommen, wenn die Erkennung sie großschreibt.
-- **Runde erfassen:** Leertaste halten und sagen: „Max 5, Paul 0, Lisa 26“. Die Werte erscheinen als Entwurf und lassen sich per Klick korrigieren. **↩** bucht die Runde. Wer nicht genannt wurde, bekommt `–` (0 Punkte).
-  - „Paul und Lisa 26“ gibt beiden 26 Punkte.
+- **Neues Spiel:** Die Spieler der letzten Partie sind vorausgewählt. Mit einem Klick auf einen Namen fliegt er raus. Weitere Namen tippen oder Leertaste halten und ansagen, z. B. „Kasimir und Bruno hinzufügen, Mathilda raus“. Füllwörter werden ignoriert, neue Namen nur übernommen, wenn die Erkennung sie großschreibt.
+- **Runde erfassen:** Leertaste halten und sagen: „Max 5, Oskar 0, Mila 26“. Die Werte erscheinen als Entwurf und lassen sich per Klick korrigieren. **↩** bucht die Runde. Wer nicht genannt wurde, bekommt `–` (0 Punkte).
+  - Namen und Zahlen dürfen verschiedene Leute sagen: „Mila“ – Mila antwortet „26“.
+  - „Oskar und Mila 26“ gibt beiden 26 Punkte. Ohne „und“ bekommt nur der letzte Name die Zahl.
   - „null“, „verzockt“ und „raus“ zählen als 0.
 - **Spielende:** Hat am Ende einer Runde jemand die Zielpunktzahl (Standard 200) erreicht, gewinnt die höchste Summe. Bei Gleichstand auf Platz 1 folgt eine Extrarunde.
 - **Korrektur:** Gebuchte Zellen lassen sich anklicken. **⌘Z** nimmt die letzte Runde zurück, auch nach dem Sieg.
-- **Historie:** Rangliste mit Siegen, bester Runde, Ø pro Runde und Verzockt-Quote, dazu alle Spiele mit kompletter Tabelle. Über das ⋯-Menü lässt sich ein Spieler zurücksetzen oder aus der Rangliste entfernen.
+- **Historie:** Rangliste mit Siegen, höchstem Sieg, bester Runde, Ø pro Runde und Verzockt-Quote, dazu alle Spiele mit kompletter Tabelle. Über das ⋯-Menü lässt sich ein Spieler zurücksetzen oder aus der Rangliste entfernen.
 - **Einstellungen (⌘,):** Sprechtaste, Zielpunktzahl, Sounds, Startanimation, Historie löschen.
 
 Die Spracherkennung (`SpeechAnalyzer` mit `DictationTranscriber`) läuft komplett auf dem Mac. Dafür braucht die App nur den Mikrofonzugriff, den sie beim ersten Start anfragt. Die Spielstände liegen in `~/Library/Application Support/Flip7Counter/library.json`.

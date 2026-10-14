@@ -87,7 +87,7 @@ struct GameView: View {
     private var hint: String {
         let missing = model.draft.missing(in: game.players).map(\.name.value)
         let key = model.preferences.hotkey.label
-        guard !model.draft.isEmpty, !missing.isEmpty else { return "\(key) halten: „Max 5, Paul 0, Lisa 26“" }
+        guard !model.draft.isEmpty, !missing.isEmpty else { return "\(key) halten: „Max 5, Oskar 0, Mila 26“" }
         return "Fehlt noch: \(missing.formatted(.list(type: .and))) – bekommt sonst –"
     }
 }

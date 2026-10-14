@@ -18,7 +18,7 @@ struct NewGameView: View {
                     }
                     .frame(maxWidth: .infinity, alignment: .leading)
                 }
-                VoiceHint(text: "\(model.preferences.hotkey.label) halten und Namen sagen – z. B. „Christian, Martin, Jonathan raus“")
+                VoiceHint(text: "\(model.preferences.hotkey.label) halten und Namen sagen – z. B. „Kasimir, Bruno, Mathilda raus“")
                 HStack(spacing: 16) {
                     Button("Los geht's!", action: model.startGame)
                         .buttonStyle(ChunkyButtonStyle(size: 24))

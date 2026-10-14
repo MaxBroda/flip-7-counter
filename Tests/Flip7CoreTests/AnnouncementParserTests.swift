@@ -2,7 +2,7 @@ import Testing
 @testable import Flip7Core
 
 @Suite struct AnnouncementParserTests {
-    private let players = ["Max", "Paul", "Lisa", "Florian"].compactMap(PlayerName.init).map { Player(name: $0) }
+    private let players = ["Max", "Oskar", "Mila", "Valentin"].compactMap(PlayerName.init).map { Player(name: $0) }
 
     private func scores(_ text: String) -> [String: Int] {
         let result = AnnouncementParser(players: players).parseScores(text)
@@ -12,45 +12,45 @@ import Testing
     }
 
     @Test func digits() {
-        #expect(scores("Max 5 Paul 0 Lisa 26") == ["Max": 5, "Paul": 0, "Lisa": 26])
+        #expect(scores("Max 5 Oskar 0 Mila 26") == ["Max": 5, "Oskar": 0, "Mila": 26])
     }
 
     @Test func numberWords() {
-        #expect(scores("Max fünf, Paul null, Lisa sechsundzwanzig") == ["Max": 5, "Paul": 0, "Lisa": 26])
-        #expect(scores("Lisa sechs und zwanzig") == ["Lisa": 26])
-        #expect(scores("Florian hundertzwölf") == ["Florian": 112])
+        #expect(scores("Max fünf, Oskar null, Mila sechsundzwanzig") == ["Max": 5, "Oskar": 0, "Mila": 26])
+        #expect(scores("Mila sechs und zwanzig") == ["Mila": 26])
+        #expect(scores("Valentin hundertzwölf") == ["Valentin": 112])
     }
 
     @Test func groupedNamesShareValue() {
-        #expect(scores("Max 5 Paul und Lisa 26") == ["Max": 5, "Paul": 26, "Lisa": 26])
+        #expect(scores("Max 5 Oskar und Mila 26") == ["Max": 5, "Oskar": 26, "Mila": 26])
     }
 
     @Test func bustWords() {
-        #expect(scores("Paul hat sich verzockt, Max 12") == ["Paul": 0, "Max": 12])
+        #expect(scores("Oskar hat sich verzockt, Max 12") == ["Oskar": 0, "Max": 12])
     }
 
     @Test func fuzzyNames() {
-        #expect(scores("Flo 14 Liza 3") == ["Florian": 14, "Lisa": 3])
+        #expect(scores("Vale 14 Milla 3") == ["Valentin": 14, "Mila": 3])
     }
 
     @Test func missingNumberDoesNotSpillOver() {
-        #expect(scores("Paul Schatzi Max null Lisa 22") == ["Max": 0, "Lisa": 22])
-        #expect(scores("Paul, Lisa, Max 17") == ["Max": 17])
+        #expect(scores("Oskar Schatzi Max null Mila 22") == ["Max": 0, "Mila": 22])
+        #expect(scores("Oskar, Mila, Max 17") == ["Max": 17])
     }
 
     @Test func gluedNameAndNumber() {
-        #expect(scores("Max fünf | Florian, zwölf | Paulhundert") == ["Max": 5, "Florian": 12, "Paul": 100])
-        #expect(scores("Lisa achtundzwanzig, Max nein") == ["Lisa": 28, "Max": 9])
+        #expect(scores("Max fünf | Valentin, zwölf | Oskarhundert") == ["Max": 5, "Valentin": 12, "Oskar": 100])
+        #expect(scores("Mila achtundzwanzig, Max nein") == ["Mila": 28, "Max": 9])
     }
 
     @Test func dictationSegments() {
-        #expect(scores("Max, 100 Florian 19 Christian 40") == ["Max": 100, "Florian": 19])
-        #expect(scores("Max 112, Paul null, Leser 26") == ["Max": 112, "Paul": 0, "Lisa": 26])
-        #expect(scores("Max fünf, Paul und leiser, 26") == ["Max": 5, "Paul": 26, "Lisa": 26])
+        #expect(scores("Max, 100 Valentin 19 Kasimir 40") == ["Max": 100, "Valentin": 19])
+        #expect(scores("Max 112, Oskar null, Meler 26") == ["Max": 112, "Oskar": 0, "Mila": 26])
+        #expect(scores("Max fünf, Oskar und Meiler, 26") == ["Max": 5, "Oskar": 26, "Mila": 26])
     }
 
     @Test func glued() {
-        #expect(scores("Max5 Paul:12.") == ["Max": 5, "Paul": 12])
+        #expect(scores("Max5 Oskar:12.") == ["Max": 5, "Oskar": 12])
     }
 
     private func lineup(_ text: String, known: [String]) -> (add: [String], remove: [String]) {
@@ -59,52 +59,52 @@ import Testing
     }
 
     @Test func parsesNamesAndReusesKnownSpelling() {
-        let result = lineup("Martin, max und Florjan kristian", known: ["Christian", "Florian", "Max"])
-        #expect(result.add == ["Martin", "Max", "Florian", "Christian"])
+        let result = lineup("Bruno, max und Walentin casimir", known: ["Kasimir", "Valentin", "Max"])
+        #expect(result.add == ["Bruno", "Max", "Valentin", "Kasimir"])
         #expect(result.remove.isEmpty)
     }
 
     @Test(arguments: [
-        "Jonathan und Christian hinzufügen, Lisa raus",
-        "Jonathan und Christian hinzu. Lisa raus.",
-        "Jonathan und Christian dazu, Lisa bitte rausnehmen",
-        "Ich möchte Jonathan und Christian noch mit dazu nehmen und Lisa raus",
-        "Bitte Jonathan und Christian neu rein, Lisa raus",
+        "Mathilda und Kasimir hinzufügen, Mila raus",
+        "Mathilda und Kasimir hinzu. Mila raus.",
+        "Mathilda und Kasimir dazu, Mila bitte rausnehmen",
+        "Ich möchte Mathilda und Kasimir noch mit dazu nehmen und Mila raus",
+        "Bitte Mathilda und Kasimir neu rein, Mila raus",
     ])
     func ignoresGermanFillerWords(sentence: String) {
-        let result = lineup(sentence, known: ["Lisa", "Max"])
-        #expect(result.add == ["Jonathan", "Christian"])
-        #expect(result.remove == ["Lisa"])
+        let result = lineup(sentence, known: ["Mila", "Max"])
+        #expect(result.add == ["Mathilda", "Kasimir"])
+        #expect(result.remove == ["Mila"])
     }
 
     @Test func rausRemovesOnlyTheNameBeforeIt() {
-        let result = lineup("Christian und Martin Jonathan raus", known: ["Florian", "Jonathan", "Max"])
-        #expect(result.add == ["Christian", "Martin"])
-        #expect(result.remove == ["Jonathan"])
+        let result = lineup("Kasimir und Bruno Mathilda raus", known: ["Valentin", "Mathilda", "Max"])
+        #expect(result.add == ["Kasimir", "Bruno"])
+        #expect(result.remove == ["Mathilda"])
     }
 
     @Test func rausInTheMiddle() {
-        let result = lineup("Christian, Jonatan raus, Martin", known: ["Jonathan"])
-        #expect(result.add == ["Christian", "Martin"])
-        #expect(result.remove == ["Jonathan"])
+        let result = lineup("Kasimir, Matilda raus, Bruno", known: ["Mathilda"])
+        #expect(result.add == ["Kasimir", "Bruno"])
+        #expect(result.remove == ["Mathilda"])
     }
 
     @Test func rausRemovesNamesJoinedWithUnd() {
-        let result = lineup("Christian, Jonathan und Max raus", known: ["Jonathan", "Max"])
-        #expect(result.add == ["Christian"])
-        #expect(Set(result.remove) == ["Jonathan", "Max"])
+        let result = lineup("Kasimir, Mathilda und Max raus", known: ["Mathilda", "Max"])
+        #expect(result.add == ["Kasimir"])
+        #expect(Set(result.remove) == ["Mathilda", "Max"])
     }
 }
 
 @Suite struct LineupRegressionTests {
     @Test func rausWorksWhenNameIsBothInLineupAndKnown() {
-        let jonathan = PlayerName("Jonathan.")!
-        let result = AnnouncementParser.parseLineup("Christian und Martin Jonathan raus", known: [jonathan, jonathan])
-        #expect(result.removals == [jonathan])
+        let mathilda = PlayerName("Mathilda.")!
+        let result = AnnouncementParser.parseLineup("Kasimir und Bruno Mathilda raus", known: [mathilda, mathilda])
+        #expect(result.removals == [mathilda])
     }
 
     @Test func playerNameDropsSurroundingPunctuation() {
-        #expect(PlayerName("Jonathan.")?.value == "Jonathan")
+        #expect(PlayerName("Mathilda.")?.value == "Mathilda")
         #expect(PlayerName(" „Max“, ")?.value == "Max")
         #expect(PlayerName("...") == nil)
     }

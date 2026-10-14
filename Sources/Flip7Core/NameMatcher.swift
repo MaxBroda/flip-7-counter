@@ -28,7 +28,7 @@ struct NameMatcher<Candidate> {
         return nil
     }
 
-    // German speakers vocalize a final "-er" as "-a" ("Leser" ≈ "Lisa").
+    // German speakers vocalize a final "-er" as "-a" ("Meler" ≈ "Mila").
     private func soundAlikes(_ word: String) -> [String] {
         word.hasSuffix("er") ? [word, String(word.dropLast(2)) + "a"] : [word]
     }
