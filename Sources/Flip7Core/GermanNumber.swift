@@ -1,11 +1,19 @@
 enum GermanNumber {
     private static let words: [String: Int] = [
         "null": 0, "ein": 1, "eins": 1, "eine": 1, "einen": 1, "zwei": 2, "zwo": 2, "drei": 3, "vier": 4,
-        "funf": 5, "sechs": 6, "sieben": 7, "acht": 8, "neun": 9, "zehn": 10, "elf": 11, "zwolf": 12,
+        "funf": 5, "sechs": 6, "sieben": 7, "acht": 8, "neun": 9, "nein": 9, "zehn": 10, "elf": 11, "zwolf": 12,
         "dreizehn": 13, "vierzehn": 14, "funfzehn": 15, "sechzehn": 16, "siebzehn": 17, "achtzehn": 18,
         "neunzehn": 19, "zwanzig": 20, "dreissig": 30, "vierzig": 40, "funfzig": 50, "sechzig": 60,
         "siebzig": 70, "achtzig": 80, "neunzig": 90,
     ]
+
+    static let spokenForms: [String] = {
+        let units = ["ein", "zwei", "drei", "vier", "fünf", "sechs", "sieben", "acht", "neun"]
+        let tens = ["zwanzig", "dreißig", "vierzig", "fünfzig", "sechzig", "siebzig", "achtzig", "neunzig"]
+        let small = ["null", "eins", "zwei", "drei", "vier", "fünf", "sechs", "sieben", "acht", "neun", "zehn", "elf", "zwölf",
+                     "dreizehn", "vierzehn", "fünfzehn", "sechzehn", "siebzehn", "achtzehn", "neunzehn"]
+        return small + tens + tens.flatMap { ten in units.map { $0 + "und" + ten } } + ["hundert", "verzockt"]
+    }()
 
     static let bustWords: Set<String> = ["nichts", "nix", "verzockt", "raus", "keine", "kein", "bust", "zero"]
 

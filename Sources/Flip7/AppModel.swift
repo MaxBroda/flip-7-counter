@@ -194,24 +194,26 @@ final class AppModel {
         }
         sounds.play(.listenEnd)
         Task {
-            let text = await speech.stop()
-            guard !text.isEmpty else { return }
-            apply(transcript: text)
+            let utterance = await speech.stop()
+            guard !utterance.text.isEmpty else { return }
+            apply(utterance)
         }
     }
 
     private var speechHints: [String] {
-        let names = game.map { $0.players.map(\.name) } ?? knownNames
-        return names.map(\.value) + ["null", "verzockt"]
+        guard let game else { return knownNames.map(\.value) }
+        return game.players.map(\.name.value) + AnnouncementParser.scoreVocabulary
     }
 
-    private func apply(transcript: String) {
+    private func apply(_ utterance: Utterance) {
         if let game {
-            let announcement = AnnouncementParser(players: game.players).parseScores(transcript)
+            let parser = AnnouncementParser(players: game.players)
+            draft.merge(parser.parseScores(utterance.live))
+            let announcement = parser.parseScores(utterance.text)
             draft.merge(announcement)
             unrecognized = announcement.unrecognized
         } else {
-            let announcement = AnnouncementParser.parseLineup(transcript, known: lineup + knownNames)
+            let announcement = AnnouncementParser.parseLineup(utterance.text, known: lineup + knownNames)
             announcement.additions.forEach { addToLineup($0.value) }
             announcement.removals.forEach(removeFromLineup)
         }

@@ -26,6 +26,8 @@ public struct AnnouncementParser {
         "der", "die", "das", "bei", "auch", "plus", "runde", "also", "ah", "ahm", "ok", "okay", "dann", "spieler",
     ]
 
+    public static var scoreVocabulary: [String] { GermanNumber.spokenForms }
+
     private let players: [Player]
     private let matcher: NameMatcher<Player>
 
@@ -35,13 +37,19 @@ public struct AnnouncementParser {
     }
 
     public func parseScores(_ text: String) -> ScoreAnnouncement {
-        let tokens = Self.tokenize(text)
+        let tokens = Self.tokenize(text).flatMap(splitGluedNumber)
         var scores: [UUID: Points] = [:]
         var pending: [Player] = []
+        var joinsPending = false
         var unrecognized: [String] = []
         var index = 0
         while index < tokens.count {
-            if let (value, consumed) = readNumber(tokens, at: index) {
+            let joins = joinsPending
+            joinsPending = false
+            if tokens[index] == "und", !pending.isEmpty {
+                joinsPending = true
+                index += 1
+            } else if let (value, consumed) = readNumber(tokens, at: index) {
                 if let points = Points(value) {
                     pending.forEach { scores[$0.id] = points }
                 } else {
@@ -50,6 +58,7 @@ public struct AnnouncementParser {
                 pending.removeAll()
                 index += consumed
             } else if let (player, consumed) = readPlayer(tokens, at: index) {
+                if !joins { pending.removeAll() }
                 if !pending.contains(player) { pending.append(player) }
                 index += consumed
             } else {
@@ -117,6 +126,14 @@ public struct AnnouncementParser {
 
     static func tokenize(_ text: String) -> [String] {
         tokens(text).map(\.key)
+    }
+
+    private func splitGluedNumber(_ token: String) -> [String] {
+        for player in players where token.count > player.name.key.count && token.hasPrefix(player.name.key) {
+            let rest = String(token.dropFirst(player.name.key.count))
+            if GermanNumber.parse(rest) != nil { return [player.name.key, rest] }
+        }
+        return [token]
     }
 
     private func readNumber(_ tokens: [String], at index: Int) -> (Int, Int)? {

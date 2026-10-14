@@ -33,6 +33,16 @@ import Testing
         #expect(scores("Flo 14 Liza 3") == ["Florian": 14, "Lisa": 3])
     }
 
+    @Test func missingNumberDoesNotSpillOver() {
+        #expect(scores("Paul Schatzi Max null Lisa 22") == ["Max": 0, "Lisa": 22])
+        #expect(scores("Paul, Lisa, Max 17") == ["Max": 17])
+    }
+
+    @Test func gluedNameAndNumber() {
+        #expect(scores("Max fünf | Florian, zwölf | Paulhundert") == ["Max": 5, "Florian": 12, "Paul": 100])
+        #expect(scores("Lisa achtundzwanzig, Max nein") == ["Lisa": 28, "Max": 9])
+    }
+
     @Test func dictationSegments() {
         #expect(scores("Max, 100 Florian 19 Christian 40") == ["Max": 100, "Florian": 19])
         #expect(scores("Max 112, Paul null, Leser 26") == ["Max": 112, "Paul": 0, "Lisa": 26])
