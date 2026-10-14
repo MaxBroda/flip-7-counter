@@ -18,11 +18,16 @@ struct NameMatcher<Candidate> {
 
     private func score(_ token: String, against key: String) -> Int? {
         if token == key { return 0 }
-        if ColognePhonetics.code(token) == ColognePhonetics.code(key) { return 1 }
+        if !Set(soundAlikes(token).map(ColognePhonetics.code)).isDisjoint(with: soundAlikes(key).map(ColognePhonetics.code)) { return 1 }
         let distance = levenshtein(token, key)
         if distance <= (min(token.count, key.count) <= 4 ? 1 : 2) { return 1 + distance }
         if min(token.count, key.count) >= 3, key.hasPrefix(token) || token.hasPrefix(key) { return 4 }
         return nil
+    }
+
+    // German speakers vocalize a final "-er" as "-a" ("Leser" ≈ "Lisa").
+    private func soundAlikes(_ word: String) -> [String] {
+        word.hasSuffix("er") ? [word, String(word.dropLast(2)) + "a"] : [word]
     }
 
     private func levenshtein(_ a: String, _ b: String) -> Int {

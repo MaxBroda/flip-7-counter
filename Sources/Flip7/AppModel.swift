@@ -41,12 +41,21 @@ final class AppModel {
         game = library.current
         hotkeys.onPress = { [weak self] in self?.beginListening() }
         hotkeys.onRelease = { [weak self] in self?.endListening() }
+        hotkeys.yieldsToTextInput = { [weak self] in self?.game == nil }
         hotkeys.install()
     }
 
     var knownNames: [PlayerName] { library.knownNames }
 
     var suggestions: [PlayerName] { knownNames.filter { !lineup.contains($0) } }
+
+    var lastLineup: [PlayerName] {
+        library.games.max { $0.startedAt < $1.startedAt }?.players.map(\.name).filter(knownNames.contains) ?? []
+    }
+
+    func prepareSpeech() async {
+        await speech.prepare()
+    }
 
     func captureNextKey(_ handler: @escaping (Hotkey) -> Void) {
         hotkeys.capture = { handler(Hotkey(event: $0)) }
@@ -96,9 +105,12 @@ final class AppModel {
         startGame()
     }
 
+    func useLastLineup() {
+        lineup = lastLineup
+    }
+
     func closeGame() {
         isCelebrating = false
-        if let game { lineup = game.players.map(\.name) }
         game = nil
         draft = RoundDraft()
         unrecognized = []
@@ -163,13 +175,34 @@ final class AppModel {
         save()
     }
 
+    func resetStats(of name: PlayerName) {
+        library.resetStats(of: name)
+        save()
+    }
+
+    func removePlayer(_ name: PlayerName) {
+        library.removePlayer(name)
+        lineup.removeAll { $0 == name }
+        save()
+    }
+
+    func clearHistory() {
+        library.clearHistory()
+        save()
+    }
+
     func beginListening() {
         guard screen == .play, !isCelebrating, game?.isFinished != true else { return }
-        sounds.play(.listen)
+        sounds.play(.listenStart)
         Task { await speech.start(hints: speechHints) }
     }
 
     func endListening() {
+        guard speech.isListening else {
+            Task { _ = await speech.stop() }
+            return
+        }
+        sounds.play(.listenEnd)
         Task {
             let text = await speech.stop()
             guard !text.isEmpty else { return }

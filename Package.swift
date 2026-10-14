@@ -3,7 +3,7 @@ import PackageDescription
 
 let package = Package(
     name: "Flip7",
-    platforms: [.macOS(.v14)],
+    platforms: [.macOS("27.0")],
     targets: [
         .target(name: "Flip7Core"),
         .executableTarget(name: "Flip7", dependencies: ["Flip7Core"]),

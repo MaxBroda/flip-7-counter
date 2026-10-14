@@ -3,10 +3,12 @@ import AppKit
 final class HotkeyMonitor {
     var onPress: () -> Void = {}
     var onRelease: () -> Void = {}
+    var yieldsToTextInput: () -> Bool = { true }
     var capture: ((NSEvent) -> Void)?
 
     private let hotkey: () -> Hotkey
-    private var monitor: Any?
+    private var keyMonitor: Any?
+    private var clickMonitor: Any?
     private var isHeld = false
 
     init(hotkey: @escaping () -> Hotkey) {
@@ -14,38 +16,55 @@ final class HotkeyMonitor {
     }
 
     func install() {
-        guard monitor == nil else { return }
-        monitor = NSEvent.addLocalMonitorForEvents(matching: [.keyDown, .keyUp]) { [weak self] event in
+        guard keyMonitor == nil else { return }
+        keyMonitor = NSEvent.addLocalMonitorForEvents(matching: [.keyDown, .keyUp]) { [weak self] event in
             guard let self else { return event }
-            return self.handle(event)
+            return self.handleKey(event)
+        }
+        clickMonitor = NSEvent.addLocalMonitorForEvents(matching: .leftMouseDown) { [weak self] event in
+            self?.endEditingIfClickedOutside(event)
+            return event
         }
     }
 
     deinit {
-        if let monitor { NSEvent.removeMonitor(monitor) }
+        [keyMonitor, clickMonitor].compactMap { $0 }.forEach(NSEvent.removeMonitor)
     }
 
-    private func handle(_ event: NSEvent) -> NSEvent? {
+    private func handleKey(_ event: NSEvent) -> NSEvent? {
         if let capture, event.type == .keyDown {
             self.capture = nil
             capture(event)
             return nil
         }
-        guard event.keyCode == hotkey().keyCode, !isEditingText(in: event.window) else { return event }
-        switch event.type {
-        case .keyDown where !event.isARepeat && !isHeld:
-            isHeld = true
-            onPress()
-        case .keyUp where isHeld:
+        guard event.keyCode == hotkey().keyCode else { return event }
+        if event.type == .keyUp {
+            guard isHeld else { return event }
             isHeld = false
             onRelease()
-        default:
-            break
+            return nil
+        }
+        if editor(in: event.window) != nil {
+            guard !yieldsToTextInput() else { return event }
+            event.window?.makeFirstResponder(nil)
+        }
+        if !event.isARepeat && !isHeld {
+            isHeld = true
+            onPress()
         }
         return nil
     }
 
-    private func isEditingText(in window: NSWindow?) -> Bool {
-        (window?.firstResponder as? NSTextView)?.isEditable ?? false
+    private func endEditingIfClickedOutside(_ event: NSEvent) {
+        guard let window = event.window, let editor = editor(in: window) else { return }
+        let field = (editor.delegate as? NSView) ?? editor
+        if !field.convert(field.bounds, to: nil).contains(event.locationInWindow) {
+            window.makeFirstResponder(nil)
+        }
+    }
+
+    private func editor(in window: NSWindow?) -> NSTextView? {
+        guard let editor = window?.firstResponder as? NSTextView, editor.isEditable else { return nil }
+        return editor
     }
 }

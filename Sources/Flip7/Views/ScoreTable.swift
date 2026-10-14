@@ -36,7 +36,7 @@ struct ScoreTable: View {
                         GridRow {
                             roundLabel(game.rounds.count + 1)
                             ForEach(game.players) { player in
-                                DraftCell(points: draft.points(for: player), base: game.total(of: player)) {
+                                DraftCell(points: draft.points(for: player), base: game.total(of: player), onSubmit: model.bookRound) {
                                     model.setDraft($0, for: player)
                                 }
                             }
@@ -49,6 +49,7 @@ struct ScoreTable: View {
                 .frame(minWidth: geometry.size.width, alignment: .leading)
             }
             .onChange(of: game.rounds.count) {
+                NSApp.keyWindow?.makeFirstResponder(nil)
                 withAnimation { proxy.scrollTo("draft", anchor: .bottom) }
             }
         }
@@ -136,6 +137,7 @@ private struct ScoreCell: View {
 private struct DraftCell: View {
     let points: Points?
     let base: Int
+    let onSubmit: () -> Void
     let onChange: (String) -> Void
 
     @State private var text = ""
@@ -151,6 +153,10 @@ private struct DraftCell: View {
                 .frame(width: 48)
                 .focused($focused)
                 .onChange(of: text) { onChange(text) }
+                .onSubmit {
+                    focused = false
+                    onSubmit()
+                }
             if let points {
                 Text(points.isBust ? "–" : "→ \(base + points.value)")
                     .font(Theme.rounded(12, .bold))
@@ -160,7 +166,7 @@ private struct DraftCell: View {
         .frame(minWidth: 90, maxWidth: .infinity)
         .padding(.vertical, 6)
         .onAppear { sync() }
-        .onChange(of: points) { if !focused || points == nil { sync() } }
+        .onChange(of: points) { if Int(text) != points?.value { sync() } }
     }
 
     private func sync() {

@@ -1,3 +1,4 @@
+import Foundation
 import Testing
 @testable import Flip7Core
 
@@ -70,5 +71,49 @@ import Testing
         #expect(stats.first?.name.value == "Max")
         #expect(stats.first?.wins == 1)
         #expect(stats.last?.bustRate == 1)
+    }
+}
+
+@Suite struct LibraryTests {
+    private func finishedGame(_ names: [String], _ points: [Int], at date: Date) throws -> Game {
+        var game = try Game(names: names.compactMap(PlayerName.init), target: 10, startedAt: date)
+        var draft = RoundDraft()
+        for (player, value) in zip(game.players, points) { draft.set(Points(value), for: player) }
+        game.book(draft, at: date)
+        return game
+    }
+
+    @Test func resetZeroesStatsButKeepsPlayer() throws {
+        let max = PlayerName("Max")!
+        var library = Library(games: [try finishedGame(["Max", "Paul"], [20, 5], at: .distantPast)])
+        library.resetStats(of: max)
+        let stats = try #require(library.leaderboard.first { $0.name == max })
+        #expect(stats.gamesPlayed == 0)
+        #expect(stats.wins == 0)
+        #expect(library.knownNames.contains(max))
+    }
+
+    @Test func removeHidesPlayerUntilNextGame() throws {
+        let paul = PlayerName("Paul")!
+        var library = Library(games: [try finishedGame(["Max", "Paul"], [20, 5], at: .distantPast)])
+        library.removePlayer(paul)
+        #expect(!library.leaderboard.contains { $0.name == paul })
+        #expect(!library.knownNames.contains(paul))
+        library.save(try finishedGame(["Paul", "Max"], [30, 0], at: .now.addingTimeInterval(5)))
+        #expect(library.leaderboard.first { $0.name == paul }?.wins == 1)
+        #expect(library.knownNames.contains(paul))
+    }
+
+    @Test func clearHistoryKeepsRunningGame() throws {
+        let running = try Game(names: ["A", "B"].compactMap(PlayerName.init), target: 200)
+        var library = Library(games: [try finishedGame(["Max", "Paul"], [20, 5], at: .now), running])
+        library.clearHistory()
+        #expect(library.games.map(\.id) == [running.id])
+        #expect(library.leaderboard.isEmpty)
+    }
+
+    @Test func decodesFilesWithoutResets() throws {
+        let json = #"{"games":[]}"#.data(using: .utf8)!
+        #expect(try JSONDecoder().decode(Library.self, from: json).resets.isEmpty)
     }
 }

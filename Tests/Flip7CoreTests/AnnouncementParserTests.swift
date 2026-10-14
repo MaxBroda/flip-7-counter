@@ -33,6 +33,12 @@ import Testing
         #expect(scores("Flo 14 Liza 3") == ["Florian": 14, "Lisa": 3])
     }
 
+    @Test func dictationSegments() {
+        #expect(scores("Max, 100 Florian 19 Christian 40") == ["Max": 100, "Florian": 19])
+        #expect(scores("Max 112, Paul null, Leser 26") == ["Max": 112, "Paul": 0, "Lisa": 26])
+        #expect(scores("Max fünf, Paul und leiser, 26") == ["Max": 5, "Paul": 26, "Lisa": 26])
+    }
+
     @Test func glued() {
         #expect(scores("Max5 Paul:12.") == ["Max": 5, "Paul": 12])
     }

@@ -39,9 +39,17 @@ struct NewGameView: View {
     private var lineup: some View {
         Group {
             if model.lineup.isEmpty {
-                Text("Noch keine Spieler. Tippe Namen ein oder sag sie an.")
-                    .font(Theme.rounded(15, .medium))
-                    .foregroundStyle(Theme.navy.opacity(0.55))
+                HStack(spacing: 14) {
+                    Text("Noch keine Spieler. Tippe Namen ein oder sag sie an.")
+                        .font(Theme.rounded(15, .medium))
+                        .foregroundStyle(Theme.navy.opacity(0.55))
+                    if !model.lastLineup.isEmpty {
+                        Button("Wie letztes Mal: \(model.lastLineup.map(\.value).joined(separator: ", "))") {
+                            withAnimation(.spring) { model.useLastLineup() }
+                        }
+                        .buttonStyle(ChunkyButtonStyle(fill: Theme.mint, size: 13))
+                    }
+                }
             } else {
                 FlowLayout(spacing: 10) {
                     ForEach(Array(model.lineup.enumerated()), id: \.element) { index, name in
@@ -117,20 +125,27 @@ private struct PlayerChip: View {
     let color: Color
     let onRemove: () -> Void
 
+    @State private var hovering = false
+
     var body: some View {
-        HStack(spacing: 8) {
-            Avatar(name: name, color: color, size: 28)
-            Text(name).font(Theme.rounded(17, .heavy)).foregroundStyle(Theme.navy)
-            Button(action: onRemove) {
-                Image(systemName: "xmark.circle.fill").foregroundStyle(Theme.navy.opacity(0.35))
+        Button(action: onRemove) {
+            HStack(spacing: 8) {
+                Avatar(name: name, color: color, size: 28)
+                Text(name).font(Theme.rounded(17, .heavy)).foregroundStyle(Theme.navy)
+                Image(systemName: "xmark.circle.fill")
+                    .font(.system(size: 16))
+                    .foregroundStyle(hovering ? Theme.coral : Theme.navy.opacity(0.55))
             }
-            .buttonStyle(.plain)
+            .padding(.leading, 6)
+            .padding(.trailing, 10)
+            .padding(.vertical, 6)
+            .background(Pill().fill(color.opacity(hovering ? 0.45 : 0.25)))
+            .overlay(Pill().strokeBorder(Theme.navy, lineWidth: 2))
+            .contentShape(Pill())
         }
-        .padding(.leading, 6)
-        .padding(.trailing, 10)
-        .padding(.vertical, 6)
-        .background(Pill().fill(color.opacity(0.25)))
-        .overlay(Pill().strokeBorder(Theme.navy, lineWidth: 2))
+        .buttonStyle(.plain)
+        .onHover { hovering = $0 }
+        .accessibilityLabel("\(name) entfernen")
     }
 }
 

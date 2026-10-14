@@ -30,6 +30,9 @@ struct RootView: View {
             }
         }
         .animation(.easeInOut(duration: 0.3), value: model.isCelebrating)
+        .task(id: showsIntro) {
+            if !showsIntro { await model.prepareSpeech() }
+        }
         .frame(minWidth: 900, minHeight: 640)
         .alert("Hoppla", isPresented: Binding(get: { model.alert != nil }, set: { if !$0 { model.alert = nil } })) {
             Button("OK") { model.alert = nil }
@@ -71,7 +74,6 @@ private struct TopBar: View {
                     .foregroundStyle(Theme.navy)
             }
             .buttonStyle(.plain)
-            .help("Einstellungen (⌘,)")
         }
         .padding(.horizontal, 24)
         .padding(.vertical, 10)

@@ -72,7 +72,6 @@ struct GameView: View {
             .buttonStyle(ChunkyButtonStyle(fill: Theme.paper, size: 16))
             .keyboardShortcut("z", modifiers: .command)
             .disabled(game.rounds.isEmpty)
-            .help("Letzte Runde rückgängig (⌘Z)")
             if game.isFinished {
                 Button("Siegerehrung") { model.isCelebrating = true }
                     .buttonStyle(ChunkyButtonStyle(size: 18))

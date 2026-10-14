@@ -13,15 +13,8 @@ image.lockFocus()
 
 let tile = NSRect(x: 100, y: 100, width: 824, height: 824)
 let tilePath = NSBezierPath(roundedRect: tile, xRadius: 185, yRadius: 185)
-NSGraphicsContext.saveGraphicsState()
-let shadow = NSShadow()
-shadow.shadowColor = NSColor.black.withAlphaComponent(0.3)
-shadow.shadowOffset = NSSize(width: 0, height: -10)
-shadow.shadowBlurRadius = 24
-shadow.set()
 cream.setFill()
 tilePath.fill()
-NSGraphicsContext.restoreGraphicsState()
 
 NSGraphicsContext.saveGraphicsState()
 tilePath.addClip()
@@ -62,9 +55,6 @@ drawSeven(at: NSPoint(x: origin.x + 22, y: origin.y - 22), fill: navy, stroke: n
 drawSeven(at: origin, fill: yellow, stroke: navy, width: 14)
 drawSeven(at: origin, fill: yellow, stroke: coral, width: 5)
 
-navy.setStroke()
-tilePath.lineWidth = 22
-tilePath.stroke()
 image.unlockFocus()
 
 let rep = NSBitmapImageRep(data: image.tiffRepresentation!)!

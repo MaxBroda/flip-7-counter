@@ -11,10 +11,9 @@
     <key>CFBundleShortVersionString</key><string>1.0</string>
     <key>CFBundleVersion</key><string>1</string>
     <key>CFBundleDevelopmentRegion</key><string>de</string>
-    <key>LSMinimumSystemVersion</key><string>14.0</string>
+    <key>LSMinimumSystemVersion</key><string>27.0</string>
     <key>LSApplicationCategoryType</key><string>public.app-category.board-games</string>
     <key>NSHighResolutionCapable</key><true/>
     <key>NSMicrophoneUsageDescription</key><string>Flip 7 hört zu, solange du die Sprechtaste hältst, um Namen und Punkte zu erfassen.</string>
-    <key>NSSpeechRecognitionUsageDescription</key><string>Flip 7 wandelt deine Ansagen lokal in Namen und Punkte um.</string>
 </dict>
 </plist>

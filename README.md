@@ -10,10 +10,10 @@ Kleine Mac-App zum Mitzählen bei [Flip 7](https://www.kosmos.de/de/flip-7_16854
   - „null“, „verzockt“ und „raus“ zählen als 0.
 - **Spielende:** Hat am Ende einer Runde jemand die Zielpunktzahl (Standard 200) erreicht, gewinnt die höchste Summe. Bei Gleichstand auf Platz 1 folgt eine Extrarunde.
 - **Korrektur:** Gebuchte Zellen lassen sich anklicken. **⌘Z** nimmt die letzte Runde zurück, auch nach dem Sieg.
-- **Historie:** Rangliste mit Siegen, bester Runde, Ø pro Runde und Verzockt-Quote, dazu alle Spiele mit kompletter Tabelle.
-- **Einstellungen (⌘,):** Sprechtaste, Zielpunktzahl, Sounds, Startanimation.
+- **Historie:** Rangliste mit Siegen, bester Runde, Ø pro Runde und Verzockt-Quote, dazu alle Spiele mit kompletter Tabelle. Über das ⋯-Menü lässt sich ein Spieler zurücksetzen oder aus der Rangliste entfernen.
+- **Einstellungen (⌘,):** Sprechtaste, Zielpunktzahl, Sounds, Startanimation, Historie löschen.
 
-Die Spracherkennung läuft lokal über Apple Speech (Deutsch). Die Spielstände liegen in `~/Library/Application Support/Flip7Counter/library.json`.
+Die Spracherkennung (`SpeechAnalyzer` mit `DictationTranscriber`) läuft komplett auf dem Mac. Dafür braucht die App nur den Mikrofonzugriff, den sie beim ersten Start anfragt. Die Spielstände liegen in `~/Library/Application Support/Flip7Counter/library.json`.
 
 ## Bauen
 
@@ -23,7 +23,7 @@ Die Spracherkennung läuft lokal über Apple Speech (Deutsch). Die Spielstände 
 swift test                        # Domain- und Parser-Tests
 ```
 
-Voraussetzung: macOS 14+, Xcode 16+.
+Voraussetzung: macOS 27, Xcode 27.
 
 ## Aufbau
 

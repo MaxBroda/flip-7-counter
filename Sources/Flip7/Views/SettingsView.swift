@@ -3,6 +3,7 @@ import SwiftUI
 struct SettingsView: View {
     @Environment(AppModel.self) private var model
     @State private var recording = false
+    @State private var confirmsClear = false
 
     var body: some View {
         @Bindable var preferences = model.preferences
@@ -42,6 +43,17 @@ struct SettingsView: View {
                 Toggle("Sounds", isOn: $preferences.soundsEnabled)
                 Toggle("Karten-Animation beim Start", isOn: $preferences.showsIntro)
             }
+            Section("Daten") {
+                LabeledContent("Abgeschlossene Spiele: \(model.library.finished.count)") {
+                    Button("Historie löschen …", role: .destructive) { confirmsClear = true }
+                        .disabled(model.library.finished.isEmpty && model.library.resets.isEmpty)
+                }
+            }
+        }
+        .confirmationDialog("Gesamte Historie löschen?", isPresented: $confirmsClear) {
+            Button("Alles löschen", role: .destructive, action: model.clearHistory)
+        } message: {
+            Text("Alle abgeschlossenen Spiele und die Rangliste werden gelöscht. Ein laufendes Spiel bleibt erhalten.")
         }
         .formStyle(.grouped)
         .frame(width: 440)

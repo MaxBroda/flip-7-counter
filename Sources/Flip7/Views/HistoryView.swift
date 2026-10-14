@@ -33,12 +33,21 @@ struct HistoryView: View {
 }
 
 private struct Leaderboard: View {
+    @Environment(AppModel.self) private var model
     let stats: [PlayerStats]
+    @State private var pending: PendingAction?
+
+    private struct PendingAction: Identifiable {
+        enum Kind { case reset, remove }
+        let kind: Kind
+        let name: PlayerName
+        var id: String { "\(kind)-\(name.key)" }
+    }
 
     var body: some View {
         Grid(alignment: .leading, horizontalSpacing: 18, verticalSpacing: 10) {
             GridRow {
-                ForEach(["", "Spieler", "Spiele", "Siege", "Quote", "Beste Runde", "Ø Runde", "Verzockt"], id: \.self) { title in
+                ForEach(["", "Spieler", "Spiele", "Siege", "Quote", "Beste Runde", "Ø Runde", "Verzockt", ""], id: \.self) { title in
                     Text(title).font(Theme.rounded(12, .heavy)).foregroundStyle(Theme.navy.opacity(0.5))
                 }
             }
@@ -52,12 +61,40 @@ private struct Leaderboard: View {
                     Text("\(stat.bestRound)")
                     Text(stat.averageRound.formatted(.number.precision(.fractionLength(1))))
                     Text(stat.bustRate.formatted(.percent.precision(.fractionLength(0)))).foregroundStyle(Theme.coral)
+                    Menu {
+                        Button("Statistik zurücksetzen …") { pending = PendingAction(kind: .reset, name: stat.name) }
+                        Button("Aus Rangliste entfernen …", role: .destructive) { pending = PendingAction(kind: .remove, name: stat.name) }
+                    } label: {
+                        Image(systemName: "ellipsis.circle").font(.system(size: 17)).foregroundStyle(Theme.navy.opacity(0.6))
+                    }
+                    .menuStyle(.button)
+                    .buttonStyle(.plain)
+                    .menuIndicator(.hidden)
+                    .fixedSize()
                 }
                 .font(Theme.rounded(15, .bold))
                 .foregroundStyle(Theme.navy)
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
+        .alert(item: $pending) { action in
+            switch action.kind {
+            case .reset:
+                Alert(
+                    title: Text("Statistik von \(action.name.value) zurücksetzen?"),
+                    message: Text("Bisherige Spiele zählen nicht mehr für die Rangliste. Die Spiele selbst bleiben erhalten."),
+                    primaryButton: .destructive(Text("Zurücksetzen")) { model.resetStats(of: action.name) },
+                    secondaryButton: .cancel()
+                )
+            case .remove:
+                Alert(
+                    title: Text("\(action.name.value) entfernen?"),
+                    message: Text("Verschwindet aus Rangliste und Vorschlägen, bis wieder mitgespielt wird. Die Spiele selbst bleiben erhalten."),
+                    primaryButton: .destructive(Text("Entfernen")) { model.removePlayer(action.name) },
+                    secondaryButton: .cancel()
+                )
+            }
+        }
     }
 
     private func medal(_ index: Int) -> String {

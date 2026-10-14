@@ -12,11 +12,29 @@ public struct PlayerStats: Identifiable, Hashable, Sendable {
     public var winRate: Double { gamesPlayed == 0 ? 0 : Double(wins) / Double(gamesPlayed) }
 }
 
+public struct PlayerReset: Codable, Sendable {
+    public enum Kind: String, Codable, Sendable {
+        case zeroed
+        case removed
+    }
+
+    public let name: PlayerName
+    public let kind: Kind
+    public let date: Date
+}
+
 public struct Library: Codable, Sendable {
     public private(set) var games: [Game] = []
+    public private(set) var resets: [PlayerReset] = []
 
     public init(games: [Game] = []) {
         self.games = games
+    }
+
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        games = try container.decode([Game].self, forKey: .games)
+        resets = try container.decodeIfPresent([PlayerReset].self, forKey: .resets) ?? []
     }
 
     public var current: Game? { games.last { !$0.isFinished } }
@@ -28,7 +46,7 @@ public struct Library: Codable, Sendable {
     public var knownNames: [PlayerName] {
         var seen = Set<PlayerName>()
         return games.sorted { $0.startedAt > $1.startedAt }
-            .flatMap { $0.players.map(\.name) }
+            .flatMap { game in game.players.map(\.name).filter { !isHidden($0, in: game) } }
             .filter { seen.insert($0).inserted }
     }
 
@@ -44,18 +62,34 @@ public struct Library: Codable, Sendable {
         games.removeAll { $0.id == id }
     }
 
+    public mutating func resetStats(of name: PlayerName, at date: Date = .now) {
+        record(PlayerReset(name: name, kind: .zeroed, date: date))
+    }
+
+    public mutating func removePlayer(_ name: PlayerName, at date: Date = .now) {
+        record(PlayerReset(name: name, kind: .removed, date: date))
+    }
+
+    public mutating func clearHistory() {
+        games.removeAll(where: \.isFinished)
+        resets.removeAll()
+    }
+
     public var leaderboard: [PlayerStats] {
         var rounds: [PlayerName: [Int]] = [:]
         var played: [PlayerName: Int] = [:]
         var wins: [PlayerName: Int] = [:]
         for game in finished {
-            for player in game.players {
+            for player in game.players where counts(game, for: player.name) {
                 played[player.name, default: 0] += 1
                 rounds[player.name, default: []] += game.rounds.map { $0.points(for: player).value }
             }
-            if case .finished(let winner) = game.status {
+            if case .finished(let winner) = game.status, counts(game, for: winner.name) {
                 wins[winner.name, default: 0] += 1
             }
+        }
+        for reset in resets where reset.kind == .zeroed && played[reset.name] == nil {
+            played[reset.name] = 0
         }
         return played.map { name, count in
             let scores = rounds[name] ?? []
@@ -71,6 +105,25 @@ public struct Library: Codable, Sendable {
         .sorted {
             ($0.wins, $0.winRate, $0.averageRound, $1.name.key) > ($1.wins, $1.winRate, $1.averageRound, $0.name.key)
         }
+    }
+
+    private func reset(of name: PlayerName) -> PlayerReset? {
+        resets.last { $0.name == name }
+    }
+
+    private func counts(_ game: Game, for name: PlayerName) -> Bool {
+        guard let reset = reset(of: name) else { return true }
+        return (game.finishedAt ?? game.startedAt) > reset.date
+    }
+
+    private func isHidden(_ name: PlayerName, in game: Game) -> Bool {
+        guard let reset = reset(of: name), reset.kind == .removed else { return false }
+        return game.startedAt <= reset.date
+    }
+
+    private mutating func record(_ reset: PlayerReset) {
+        resets.removeAll { $0.name == reset.name }
+        resets.append(reset)
     }
 }
 
