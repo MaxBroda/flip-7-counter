@@ -5,6 +5,7 @@ struct GameView: View {
     @Environment(AppModel.self) private var model
     let game: Game
     @State private var confirmsAbandon = false
+    @State private var addsPlayer = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: 18) {
@@ -35,6 +36,19 @@ struct GameView: View {
                     .background(Pill().fill(Theme.coral))
             }
             Spacer()
+            if !game.isFinished {
+                Button {
+                    addsPlayer = true
+                } label: {
+                    Image(systemName: "person.crop.circle.badge.plus").font(.system(size: 22)).foregroundStyle(Theme.navy)
+                }
+                .buttonStyle(.plain)
+                .hoverLift(1.15)
+                .help("Spieler hinzufügen")
+                .popover(isPresented: $addsPlayer, arrowEdge: .bottom) {
+                    JoinPopover(game: game) { addsPlayer = false }
+                }
+            }
             Text("Ziel \(game.target)")
                 .font(Theme.display(18))
                 .foregroundStyle(Theme.navy)
@@ -89,6 +103,47 @@ struct GameView: View {
         let key = model.preferences.hotkey.label
         guard !model.draft.isEmpty, !missing.isEmpty else { return "\(key) halten: „Max 5, Oskar 0, Mila 26“" }
         return "Fehlt noch: \(missing.formatted(.list(type: .and))) – bekommt sonst –"
+    }
+}
+
+private struct JoinPopover: View {
+    @Environment(AppModel.self) private var model
+    let game: Game
+    let onDone: () -> Void
+    @State private var entry = ""
+
+    private var suggestions: [PlayerName] {
+        model.knownNames.filter { name in !game.players.contains { $0.name == name } }
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("Spieler hinzufügen").font(Theme.rounded(15, .heavy)).foregroundStyle(Theme.navy)
+            Text("Steigt mit 0 Punkten ab Runde \(game.rounds.count + 1) ein.")
+                .font(Theme.rounded(12, .medium))
+                .foregroundStyle(Theme.navy.opacity(0.6))
+            HStack {
+                TextField("Name", text: $entry).onSubmit { add(entry) }
+                Button("Hinzufügen") { add(entry) }
+                    .keyboardShortcut(.defaultAction)
+                    .disabled(PlayerName(entry) == nil)
+            }
+            if !suggestions.isEmpty {
+                FlowLayout(spacing: 8) {
+                    ForEach(suggestions, id: \.self) { name in
+                        SuggestionChip(name: name.value) { add(name.value) }
+                    }
+                }
+            }
+        }
+        .padding(16)
+        .frame(width: 320)
+    }
+
+    private func add(_ name: String) {
+        guard PlayerName(name) != nil else { return }
+        model.join(name)
+        onDone()
     }
 }
 

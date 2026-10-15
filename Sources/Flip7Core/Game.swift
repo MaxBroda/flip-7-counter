@@ -4,6 +4,7 @@ public enum GameError: Error, Equatable {
     case notEnoughPlayers
     case duplicatePlayer(PlayerName)
     case invalidTarget
+    case alreadyFinished
 }
 
 public struct Game: Identifiable, Codable, Sendable {
@@ -12,7 +13,7 @@ public struct Game: Identifiable, Codable, Sendable {
     public let id: UUID
     public let startedAt: Date
     public private(set) var finishedAt: Date?
-    public let players: [Player]
+    public private(set) var players: [Player]
     public let target: Int
     public private(set) var rounds: [Round] = []
 
@@ -30,6 +31,20 @@ public struct Game: Identifiable, Codable, Sendable {
     }
 
     public var isFinished: Bool { finishedAt != nil }
+
+    public mutating func join(_ name: PlayerName) throws {
+        guard !isFinished else { throw GameError.alreadyFinished }
+        guard !players.contains(where: { $0.name == name }) else { throw GameError.duplicatePlayer(name) }
+        players.append(Player(name: name, joinedAfter: rounds.count))
+    }
+
+    public func hasJoined(_ player: Player, by round: Int) -> Bool {
+        round >= player.joinedAfter
+    }
+
+    public func rounds(playedBy player: Player) -> ArraySlice<Round> {
+        rounds.dropFirst(player.joinedAfter)
+    }
 
     public func total(of player: Player, afterRounds count: Int? = nil) -> Int {
         rounds.prefix(count ?? rounds.count).reduce(0) { $0 + $1.points(for: player).value }
@@ -69,6 +84,9 @@ public struct Game: Identifiable, Codable, Sendable {
     public mutating func undoLastRound() {
         guard !rounds.isEmpty else { return }
         rounds.removeLast()
+        for index in players.indices where players[index].joinedAfter > rounds.count {
+            players[index].joinedAfter = rounds.count
+        }
         refreshCompletion(at: .now)
     }
 

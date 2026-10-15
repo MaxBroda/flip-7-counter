@@ -84,7 +84,7 @@ public struct Library: Codable, Sendable {
         for game in finished {
             for player in game.players where counts(game, for: player.name) {
                 played[player.name, default: 0] += 1
-                rounds[player.name, default: []] += game.rounds.map { $0.points(for: player).value }
+                rounds[player.name, default: []] += game.rounds(playedBy: player).map { $0.points(for: player).value }
             }
             if case .finished(let winner) = game.status, counts(game, for: winner.name) {
                 wins[winner.name, default: 0] += 1
@@ -111,7 +111,7 @@ public struct Library: Codable, Sendable {
         }
     }
 
-    private func reset(of name: PlayerName) -> PlayerReset? {
+    func reset(of name: PlayerName) -> PlayerReset? {
         resets.last { $0.name == name }
     }
 
@@ -125,37 +125,53 @@ public struct Library: Codable, Sendable {
         return game.startedAt <= reset.date
     }
 
+    public mutating func merge(_ shared: SharedHistory, protecting outbox: SyncOutbox) {
+        for entry in shared.games where !outbox.holds(entry.id) {
+            // Eine lokal wieder geöffnete Partie gehört dem Mac, an dem gerade gespielt wird.
+            guard games.first(where: { $0.id == entry.id })?.isFinished != false else { continue }
+            switch entry {
+            case .present(let game) where game.isFinished: save(game)
+            case .present: continue
+            case .deleted(let id): remove(id)
+            }
+        }
+        for reset in shared.resets where !outbox.holds(reset.name) {
+            if let local = self.reset(of: reset.name), local.date >= reset.date { continue }
+            record(reset)
+        }
+    }
+
     private mutating func record(_ reset: PlayerReset) {
         resets.removeAll { $0.name == reset.name }
         resets.append(reset)
     }
 }
 
-public enum LibraryStoreError: Error {
+public enum FileStoreError: Error {
     case unreadable(underlying: Error)
     case unwritable(underlying: Error)
 }
 
-public final class LibraryStore {
+public final class JSONFileStore<Value: Codable> {
     private let fileURL: URL
 
     public init(fileURL: URL) {
         self.fileURL = fileURL
     }
 
-    public static func applicationSupport() -> LibraryStore {
+    public static func applicationSupport(_ name: String) -> JSONFileStore {
         let folder = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
             .appendingPathComponent("Flip7Counter", isDirectory: true)
-        return LibraryStore(fileURL: folder.appendingPathComponent("library.json"))
+        return JSONFileStore(fileURL: folder.appendingPathComponent(name))
     }
 
-    public func load() throws -> Library {
-        guard FileManager.default.fileExists(atPath: fileURL.path) else { return Library() }
+    public func load() throws -> Value? {
+        guard FileManager.default.fileExists(atPath: fileURL.path) else { return nil }
         do {
             let data = try Data(contentsOf: fileURL)
-            return try Self.decoder.decode(Library.self, from: data)
+            return try Self.decoder.decode(Value.self, from: data)
         } catch {
-            throw LibraryStoreError.unreadable(underlying: error)
+            throw FileStoreError.unreadable(underlying: error)
         }
     }
 
@@ -167,25 +183,25 @@ public final class LibraryStore {
         return target
     }
 
-    public func save(_ library: Library) throws {
+    public func save(_ value: Value) throws {
         do {
             try FileManager.default.createDirectory(at: fileURL.deletingLastPathComponent(), withIntermediateDirectories: true)
-            try Self.encoder.encode(library).write(to: fileURL, options: .atomic)
+            try Self.encoder.encode(value).write(to: fileURL, options: .atomic)
         } catch {
-            throw LibraryStoreError.unwritable(underlying: error)
+            throw FileStoreError.unwritable(underlying: error)
         }
     }
 
-    private static let encoder: JSONEncoder = {
+    private static var encoder: JSONEncoder {
         let encoder = JSONEncoder()
         encoder.dateEncodingStrategy = .iso8601
         encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
         return encoder
-    }()
+    }
 
-    private static let decoder: JSONDecoder = {
+    private static var decoder: JSONDecoder {
         let decoder = JSONDecoder()
         decoder.dateDecodingStrategy = .iso8601
         return decoder
-    }()
+    }
 }

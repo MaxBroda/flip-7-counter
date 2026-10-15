@@ -126,7 +126,7 @@ private struct PlayerChip: View {
     }
 }
 
-private struct SuggestionChip: View {
+struct SuggestionChip: View {
     let name: String
     let action: () -> Void
     @State private var hovering = false

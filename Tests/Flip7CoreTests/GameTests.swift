@@ -72,6 +72,41 @@ import Testing
         #expect(stats.first?.wins == 1)
         #expect(stats.last?.bustRate == 1)
     }
+
+    @Test func latecomerStartsAtZeroAndSkipsEarlierRounds() throws {
+        var game = try makeGame(["Max", "Oskar"])
+        game.book(draft(game, [10, 0]))
+        try game.join(PlayerName("Omar")!)
+        let omar = game.players[2]
+        game.book(draft(game, [5, 5, 12]))
+        #expect(game.total(of: omar) == 12)
+        #expect(game.rounds(playedBy: omar).count == 1)
+        #expect(!game.hasJoined(omar, by: 0))
+        #expect(throws: GameError.duplicatePlayer(PlayerName("omar")!)) { try game.join(PlayerName("omar")!) }
+    }
+
+    @Test func latecomerStatsIgnoreRoundsBeforeJoining() throws {
+        var game = try makeGame(["Max", "Oskar"], target: 30)
+        game.book(draft(game, [10, 0]))
+        try game.join(PlayerName("Omar")!)
+        game.book(draft(game, [25, 5, 8]))
+        let stats = try #require(Library(games: [game]).leaderboard.first { $0.name.value == "Omar" })
+        #expect(stats.averageRound == 8)
+        #expect(stats.bustRate == 0)
+    }
+
+    @Test func undoBeforeJoiningMovesEntryToCurrentRound() throws {
+        var game = try makeGame(["Max", "Oskar"])
+        game.book(draft(game, [10, 0]))
+        try game.join(PlayerName("Omar")!)
+        game.undoLastRound()
+        #expect(game.players[2].joinedAfter == 0)
+    }
+
+    @Test func decodesPlayersWithoutJoinRound() throws {
+        let json = #"{"id":"6F9619FF-8B86-D011-B42D-00C04FC964FF","name":"Max"}"#.data(using: .utf8)!
+        #expect(try JSONDecoder().decode(Player.self, from: json).joinedAfter == 0)
+    }
 }
 
 @Suite struct LibraryTests {

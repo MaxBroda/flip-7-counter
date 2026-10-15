@@ -23,11 +23,15 @@ struct ScoreTable: View {
                         GridRow {
                             roundLabel(index + 1)
                             ForEach(game.players) { player in
-                                ScoreCell(
-                                    points: round.points(for: player),
-                                    total: game.total(of: player, afterRounds: index + 1),
-                                    editable: editable
-                                ) { model.correct(round, of: player, to: $0) }
+                                if game.hasJoined(player, by: index) {
+                                    ScoreCell(
+                                        points: round.points(for: player),
+                                        total: game.total(of: player, afterRounds: index + 1),
+                                        editable: editable
+                                    ) { model.correct(round, of: player, to: $0) }
+                                } else {
+                                    Color.clear.frame(minWidth: 90, maxWidth: .infinity, maxHeight: 1)
+                                }
                             }
                         }
                         .background(index.isMultiple(of: 2) ? Theme.mint.opacity(0.18) : .clear)

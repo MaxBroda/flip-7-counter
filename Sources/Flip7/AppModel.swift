@@ -10,7 +10,9 @@ final class AppModel {
         case history
     }
 
-    var screen: Screen = .play
+    var screen: Screen = .play {
+        didSet { if screen == .history { synchronize() } }
+    }
     private(set) var library: Library
     private(set) var game: Game?
     private(set) var draft = RoundDraft()
@@ -21,18 +23,20 @@ final class AppModel {
 
     let preferences: Preferences
     let speech: SpeechRecorder
-    private let store: LibraryStore
+    let sharing: HistorySync
+    private let store: JSONFileStore<Library>
     private let sounds: SoundPlayer
     private let hotkeys: HotkeyMonitor
 
-    init(store: LibraryStore, preferences: Preferences, speech: SpeechRecorder) {
+    init(store: JSONFileStore<Library>, sharing: HistorySync, preferences: Preferences, speech: SpeechRecorder) {
         self.store = store
+        self.sharing = sharing
         self.preferences = preferences
         self.speech = speech
         self.sounds = SoundPlayer { preferences.soundsEnabled }
         self.hotkeys = HotkeyMonitor { preferences.hotkey }
         do {
-            library = try store.load()
+            library = try store.load() ?? Library()
         } catch {
             library = Library()
             let backup = try? store.quarantine()
@@ -44,9 +48,13 @@ final class AppModel {
         hotkeys.onRelease = { [weak self] in self?.endListening() }
         hotkeys.yieldsToTextInput = { [weak self] in self?.game == nil }
         hotkeys.install()
+        sharing.connect(preferences.sharedHistory)
+        synchronize()
     }
 
-    var knownNames: [PlayerName] { library.knownNames }
+    var knownNames: [PlayerName] {
+        library.knownNames + preferences.names.filter { !library.knownNames.contains($0) }
+    }
 
     var suggestions: [PlayerName] { knownNames.filter { !lineup.contains($0) } }
 
@@ -91,6 +99,30 @@ final class AppModel {
         }
     }
 
+    func addName(_ text: String) {
+        for name in text.split(separator: ",").compactMap({ PlayerName(String($0)) }) where !preferences.names.contains(name) {
+            preferences.names.append(name)
+        }
+    }
+
+    func removeName(_ name: PlayerName) {
+        preferences.names.removeAll { $0 == name }
+    }
+
+    func join(_ text: String) {
+        guard var game, let typed = PlayerName(text) else { return }
+        do {
+            try game.join(knownNames.first { $0 == typed } ?? typed)
+            self.game = game
+            persist(game)
+            sounds.play(.book)
+        } catch GameError.duplicatePlayer(let name) {
+            alert = "\(name) spielt schon mit."
+        } catch {
+            alert = "Das Spiel ist schon beendet."
+        }
+    }
+
     func rematch() {
         guard let game else { return }
         lineup = game.players.map(\.name)
@@ -107,9 +139,13 @@ final class AppModel {
     }
 
     func abandonGame() {
-        if let game { library.remove(game.id) }
+        if let game {
+            library.remove(game.id)
+            sharing.delete(game.id)
+        }
         save()
         closeGame()
+        synchronize()
     }
 
     func setDraft(_ text: String, for player: Player) {
@@ -162,23 +198,55 @@ final class AppModel {
 
     func deleteFromHistory(_ id: Game.ID) {
         library.remove(id)
+        sharing.delete(id)
         save()
+        synchronize()
     }
 
     func resetStats(of name: PlayerName) {
         library.resetStats(of: name)
+        sharing.publishReset(of: name)
         save()
+        synchronize()
     }
 
     func removePlayer(_ name: PlayerName) {
         library.removePlayer(name)
+        sharing.publishReset(of: name)
         lineup.removeAll { $0 == name }
         save()
+        synchronize()
     }
 
     func clearHistory() {
+        guard !sharing.isConnected else { return }
         library.clearHistory()
         save()
+    }
+
+    /// - Returns: `false`, wenn URL oder Key unbrauchbar sind.
+    @discardableResult
+    func connectSharedHistory(url: String, key: String) -> Bool {
+        guard let config = SupabaseConfig(url: url, key: key) else { return false }
+        preferences.sharedHistory = config
+        sharing.connect(config)
+        synchronize()
+        return true
+    }
+
+    func disconnectSharedHistory() {
+        preferences.sharedHistory = nil
+        sharing.connect(nil)
+    }
+
+    func synchronize() {
+        guard sharing.isConnected else { return }
+        Task {
+            await sharing.run(library: { library }) { shared in
+                library.merge(shared, protecting: sharing.outbox)
+                save()
+            }
+        }
     }
 
     func beginListening() {
@@ -222,6 +290,10 @@ final class AppModel {
     private func persist(_ game: Game) {
         library.save(game)
         save()
+        if game.isFinished {
+            sharing.publish(game)
+            synchronize()
+        }
     }
 
     private func save() {

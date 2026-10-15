@@ -10,11 +10,25 @@ Kleine Mac-App zum Mitzählen bei [Flip 7](https://www.kosmos.de/de/flip-7_16854
   - „Oskar und Mila 26“ gibt beiden 26 Punkte. Ohne „und“ bekommt nur der letzte Name die Zahl.
   - „null“, „verzockt“ und „raus“ zählen als 0.
 - **Spielende:** Hat am Ende einer Runde jemand die Zielpunktzahl (Standard 200) erreicht, gewinnt die höchste Summe. Bei Gleichstand auf Platz 1 folgt eine Extrarunde.
+- **Spieler nachträglich:** Über das Personen-Symbol oben im Spiel steigt jemand mitten im Spiel ein. Er startet mit 0 Punkten, frühere Runden zählen für ihn nicht in die Statistik.
 - **Korrektur:** Gebuchte Zellen lassen sich anklicken. **⌘Z** nimmt die letzte Runde zurück, auch nach dem Sieg.
 - **Historie:** Rangliste mit Siegen, höchstem Sieg, bester Runde, Ø pro Runde und Verzockt-Quote, dazu alle Spiele mit kompletter Tabelle. Über das ⋯-Menü lässt sich ein Spieler zurücksetzen oder aus der Rangliste entfernen.
-- **Einstellungen (⌘,):** Sprechtaste, Zielpunktzahl, Sounds, Startanimation, Historie löschen.
+- **Einstellungen (⌘,):** Namensliste für die Spracherkennung (z. B. „Pratiksha“, „Jafar“), Sprechtaste, Zielpunktzahl, Sounds, Startanimation, geteilte Historie, Historie löschen.
 
 Die Spracherkennung (`SpeechAnalyzer` mit `DictationTranscriber`) läuft komplett auf dem Mac. Dafür braucht die App nur den Mikrofonzugriff, den sie beim ersten Start anfragt. Die Spielstände liegen in `~/Library/Application Support/Flip7Counter/library.json`.
+
+## Geteilte Historie
+
+Mehrere Macs können Spiele und Rangliste über ein Supabase-Projekt teilen:
+
+1. Projekt auf [supabase.com](https://supabase.com) anlegen.
+2. Im SQL Editor [`supabase/schema.sql`](supabase/schema.sql) ausführen.
+3. Unter *Project Settings → API Keys* den **publishable key** (oder den alten `anon` key) kopieren, dazu die Project URL.
+4. In der App unter Einstellungen → *Geteilte Historie* beides eintragen und *Verbinden* klicken.
+
+Geteilt werden nur beendete Spiele und Spieler-Resets. Laufende Partien bleiben auf dem Mac, an dem gespielt wird. Abgeglichen wird beim Start, nach jedem Sieg, beim Öffnen der Historie und nach Löschen oder Zurücksetzen. Ohne Netz läuft die App lokal weiter, offene Änderungen liegen in `outbox.json` und gehen beim nächsten Abgleich raus. Gelöschte Spiele werden in Supabase nur markiert (`deleted_at`), damit die Löschung auch Macs erreicht, die gerade offline waren. *Historie löschen* ist gesperrt, solange die Verbindung steht.
+
+Der Key ist für Apps gedacht und kein Geheimnis. Was er darf, regeln die Policies im Schema: lesen, anlegen, ändern, aber nicht löschen. Den `secret`/`service_role` key nie eintragen.
 
 ## Bauen
 
@@ -30,6 +44,7 @@ Voraussetzung: macOS 27, Xcode 27.
 
 | Pfad | Inhalt |
 |---|---|
-| `Sources/Flip7Core` | Domain: `Game`, `Round`, `Points`, `PlayerName`, Ansage-Parser, Historie und Speicherung |
+| `Sources/Flip7Core` | Domain: `Game`, `Round`, `Points`, `PlayerName`, Ansage-Parser, Historie, Speicherung und Supabase-Abgleich |
 | `Sources/Flip7` | SwiftUI-App: Views, Spracherkennung, Hotkey, Einstellungen |
 | `scripts/` | App-Bundle und Icon erzeugen |
+| `supabase/` | SQL-Schema für die geteilte Historie |

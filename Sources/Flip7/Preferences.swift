@@ -1,4 +1,5 @@
 import AppKit
+import Flip7Core
 import Observation
 
 struct Hotkey: Codable, Equatable {
@@ -32,6 +33,9 @@ final class Preferences {
     var targetScore: Int { didSet { defaults.set(targetScore, forKey: "targetScore") } }
     var soundsEnabled: Bool { didSet { defaults.set(soundsEnabled, forKey: "soundsEnabled") } }
     var showsIntro: Bool { didSet { defaults.set(showsIntro, forKey: "showsIntro") } }
+    /// Namen, die die Spracherkennung kennen soll, auch bevor jemand damit gespielt hat.
+    var names: [PlayerName] { didSet { defaults.set(names.map(\.value), forKey: "names") } }
+    var sharedHistory: SupabaseConfig? { didSet { defaults.set(try? sharedHistory.map(JSONEncoder().encode), forKey: "sharedHistory") } }
 
     static let targetRange = 50...1000
 
@@ -41,6 +45,8 @@ final class Preferences {
         targetScore = (defaults.object(forKey: "targetScore") as? Int) ?? 200
         soundsEnabled = (defaults.object(forKey: "soundsEnabled") as? Bool) ?? true
         showsIntro = (defaults.object(forKey: "showsIntro") as? Bool) ?? true
+        names = (defaults.stringArray(forKey: "names") ?? []).compactMap(PlayerName.init)
+        sharedHistory = defaults.data(forKey: "sharedHistory").flatMap { try? JSONDecoder().decode(SupabaseConfig.self, from: $0) }
     }
 
     private func store(_ hotkey: Hotkey, for key: String) {

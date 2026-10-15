@@ -5,7 +5,12 @@ import SwiftUI
 @main
 struct Flip7App: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) private var delegate
-    @State private var model = AppModel(store: .applicationSupport(), preferences: Preferences(), speech: SpeechRecorder())
+    @State private var model = AppModel(
+        store: .applicationSupport("library.json"),
+        sharing: HistorySync(outboxStore: .applicationSupport("outbox.json")),
+        preferences: Preferences(),
+        speech: SpeechRecorder()
+    )
 
     var body: some Scene {
         Window("Flip 7", id: "main") {
