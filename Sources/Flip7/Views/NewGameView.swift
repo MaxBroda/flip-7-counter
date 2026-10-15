@@ -96,7 +96,7 @@ struct NewGameView: View {
     }
 }
 
-private struct PlayerChip: View {
+struct PlayerChip: View {
     let name: String
     let color: Color
     let onRemove: () -> Void

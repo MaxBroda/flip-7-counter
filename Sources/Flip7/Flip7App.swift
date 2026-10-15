@@ -28,11 +28,10 @@ struct Flip7App: App {
                 }
                 .keyboardShortcut("n")
             }
-        }
-
-        Settings {
-            SettingsView()
-                .environment(model)
+            CommandGroup(replacing: .appSettings) {
+                Button("Einstellungen …") { model.screen = .settings }
+                    .keyboardShortcut(",")
+            }
         }
     }
 }

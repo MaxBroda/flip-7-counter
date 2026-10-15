@@ -8,6 +8,7 @@ final class AppModel {
     enum Screen: Hashable {
         case play
         case history
+        case settings
     }
 
     var screen: Screen = .play {
@@ -46,7 +47,7 @@ final class AppModel {
         if game == nil { lineup = lastLineup }
         hotkeys.onPress = { [weak self] in self?.beginListening() }
         hotkeys.onRelease = { [weak self] in self?.endListening() }
-        hotkeys.yieldsToTextInput = { [weak self] in self?.game == nil }
+        hotkeys.yieldsToTextInput = { [weak self] in self?.game == nil || self?.screen != .play }
         hotkeys.install()
         sharing.connect(preferences.sharedHistory)
         synchronize()

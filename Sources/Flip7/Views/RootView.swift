@@ -52,6 +52,8 @@ struct RootView: View {
             }
         case .history:
             HistoryView()
+        case .settings:
+            SettingsView()
         }
     }
 }
@@ -68,13 +70,7 @@ private struct TopBar: View {
             Spacer()
             tab("Spiel", systemImage: "suit.spade.fill", screen: .play)
             tab("Historie", systemImage: "trophy.fill", screen: .history)
-            SettingsLink {
-                Image(systemName: "gearshape.fill")
-                    .font(.system(size: 18, weight: .bold))
-                    .foregroundStyle(Theme.navy)
-            }
-            .buttonStyle(.plain)
-            .hoverLift(1.15)
+            tab("Einstellungen", systemImage: "gearshape.fill", screen: .settings)
         }
         .padding(.horizontal, 24)
         .padding(.vertical, 10)
