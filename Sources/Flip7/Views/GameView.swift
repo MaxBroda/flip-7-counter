@@ -238,7 +238,7 @@ private struct StandingCard: View {
                 .background(Pill().fill(Theme.navy))
                 .rotationEffect(.degrees(8))
                 .offset(x: 8, y: -10)
-                .help("\(bustStreak)× in Folge verzockt")
+                .help("Pech-Serie: \(bustStreak)× in Folge verzockt")
                 .transition(.scale.combined(with: .opacity))
             }
         }
