@@ -9,6 +9,7 @@ public struct PlayerStats: Identifiable, Hashable, Sendable {
     public let highestWin: Int?
     public let averageRound: Double
     public let bustRate: Double
+    public let flipSevens: Int
 
     public var winRate: Double { gamesPlayed == 0 ? 0 : Double(wins) / Double(gamesPlayed) }
 }
@@ -81,10 +82,12 @@ public struct Library: Codable, Sendable {
         var played: [PlayerName: Int] = [:]
         var wins: [PlayerName: Int] = [:]
         var highestWin: [PlayerName: Int] = [:]
+        var flipSevens: [PlayerName: Int] = [:]
         for game in finished {
             for player in game.players where counts(game, for: player.name) {
                 played[player.name, default: 0] += 1
                 rounds[player.name, default: []] += game.rounds(playedBy: player).map { $0.points(for: player).value }
+                flipSevens[player.name, default: 0] += game.rounds(playedBy: player).filter { $0.hasFlipSeven(player) }.count
             }
             if case .finished(let winner) = game.status, counts(game, for: winner.name) {
                 wins[winner.name, default: 0] += 1
@@ -103,7 +106,8 @@ public struct Library: Codable, Sendable {
                 bestRound: scores.max() ?? 0,
                 highestWin: highestWin[name],
                 averageRound: scores.isEmpty ? 0 : Double(scores.reduce(0, +)) / Double(scores.count),
-                bustRate: scores.isEmpty ? 0 : Double(scores.filter { $0 == 0 }.count) / Double(scores.count)
+                bustRate: scores.isEmpty ? 0 : Double(scores.filter { $0 == 0 }.count) / Double(scores.count),
+                flipSevens: flipSevens[name] ?? 0
             )
         }
         .sorted {

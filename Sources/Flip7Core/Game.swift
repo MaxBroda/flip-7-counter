@@ -77,7 +77,8 @@ public struct Game: Identifiable, Codable, Sendable {
     public mutating func book(_ draft: RoundDraft, at date: Date = .now) -> GameStatus {
         precondition(!isFinished, "Abgeschlossenes Spiel kann keine Runden mehr aufnehmen")
         let scores = Dictionary(uniqueKeysWithValues: players.map { ($0.id, draft.points(for: $0) ?? .bust) })
-        rounds.append(Round(scores: scores))
+        let flipSevens = Set(players.map(\.id).filter { scores[$0]?.isBust == false && draft.flipSevens.contains($0) })
+        rounds.append(Round(scores: scores, flipSevens: flipSevens))
         return refreshCompletion(at: date)
     }
 
@@ -94,6 +95,16 @@ public struct Game: Identifiable, Codable, Sendable {
         guard let index = rounds.firstIndex(where: { $0.id == roundID }) else { return }
         rounds[index].set(points, for: player)
         refreshCompletion(at: finishedAt ?? .now)
+    }
+
+    public mutating func markFlipSeven(_ isFlipSeven: Bool, round roundID: Round.ID, player: Player) {
+        guard let index = rounds.firstIndex(where: { $0.id == roundID }) else { return }
+        rounds[index].setFlipSeven(isFlipSeven, for: player)
+    }
+
+    /// Wie oft der Spieler zuletzt ohne Unterbrechung verzockt hat.
+    public func bustStreak(of player: Player) -> Int {
+        rounds(playedBy: player).reversed().prefix { $0.points(for: player).isBust }.count
     }
 
     @discardableResult

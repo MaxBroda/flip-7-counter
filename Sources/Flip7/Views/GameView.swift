@@ -171,6 +171,8 @@ private struct StandingsStrip: View {
                     total: game.total(of: player),
                     target: game.target,
                     pending: game.isFinished ? nil : draft.points(for: player),
+                    isFlipSeven: draft.hasFlipSeven(player),
+                    bustStreak: game.bustStreak(of: player),
                     isMissing: !draft.isEmpty && draft.points(for: player) == nil && !game.isFinished,
                     isLeader: game.leader == player
                 )
@@ -185,6 +187,8 @@ private struct StandingCard: View {
     let total: Int
     let target: Int
     let pending: Points?
+    let isFlipSeven: Bool
+    let bustStreak: Int
     let isMissing: Bool
     let isLeader: Bool
 
@@ -223,15 +227,31 @@ private struct StandingCard: View {
                 Text("👑").font(.system(size: 24)).offset(y: -20).transition(.scale)
             }
         }
+        .overlay(alignment: .topTrailing) {
+            if bustStreak >= 3 {
+                HStack(spacing: 2) {
+                    Text("💀").font(.system(size: 16))
+                    Text("\(bustStreak)×").font(Theme.rounded(12, .black)).foregroundStyle(Theme.paper)
+                }
+                .padding(.horizontal, 6)
+                .padding(.vertical, 2)
+                .background(Pill().fill(Theme.navy))
+                .rotationEffect(.degrees(8))
+                .offset(x: 8, y: -10)
+                .help("\(bustStreak)× in Folge verzockt")
+                .transition(.scale.combined(with: .opacity))
+            }
+        }
         .animation(.spring(duration: 0.4, bounce: 0.4), value: total)
         .animation(.spring, value: pending)
         .animation(.spring, value: isLeader)
+        .animation(.spring(duration: 0.4, bounce: 0.5), value: bustStreak)
     }
 
     @ViewBuilder
     private var pendingBadge: some View {
         if let pending {
-            Text(pending.isBust ? "verzockt" : "+\(pending.value)")
+            Text(pending.isBust ? "verzockt" : isFlipSeven ? "✨ +\(pending.value)" : "+\(pending.value)")
                 .font(Theme.rounded(14, .black))
                 .lineLimit(1)
                 .minimumScaleFactor(0.6)

@@ -103,6 +103,32 @@ import Testing
         #expect(game.players[2].joinedAfter == 0)
     }
 
+    @Test func bustStreakCountsTrailingBusts() throws {
+        var game = try makeGame(["Max", "Oskar"])
+        game.book(draft(game, [0, 5]))
+        game.book(draft(game, [12, 0]))
+        game.book(draft(game, [0, 0]))
+        game.book(draft(game, [0, 0]))
+        #expect(game.bustStreak(of: game.players[0]) == 2)
+        #expect(game.bustStreak(of: game.players[1]) == 3)
+    }
+
+    @Test func flipSevenIsBookedAndDroppedOnBust() throws {
+        var game = try makeGame(["Max", "Oskar"])
+        var round = draft(game, [40, 5])
+        round.merge(ScoreAnnouncement(scores: [:], flipSevens: [game.players[0].id], unrecognized: []))
+        game.book(round)
+        let booked = game.rounds[0]
+        #expect(booked.hasFlipSeven(game.players[0]))
+        game.correct(round: booked.id, player: game.players[0], to: 0)
+        #expect(!game.rounds[0].hasFlipSeven(game.players[0]))
+    }
+
+    @Test func decodesRoundsWithoutFlipSevens() throws {
+        let json = #"{"id":"6F9619FF-8B86-D011-B42D-00C04FC964FF","scores":[]}"#.data(using: .utf8)!
+        #expect(try JSONDecoder().decode(Round.self, from: json).id.uuidString == "6F9619FF-8B86-D011-B42D-00C04FC964FF")
+    }
+
     @Test func decodesPlayersWithoutJoinRound() throws {
         let json = #"{"id":"6F9619FF-8B86-D011-B42D-00C04FC964FF","name":"Max"}"#.data(using: .utf8)!
         #expect(try JSONDecoder().decode(Player.self, from: json).joinedAfter == 0)

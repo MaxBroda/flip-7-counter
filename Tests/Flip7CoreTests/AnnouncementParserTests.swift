@@ -38,6 +38,23 @@ import Testing
         #expect(scores("Oskar, Mila, Max 17") == ["Max": 17])
     }
 
+    private func flipSevens(_ text: String) -> Set<String> {
+        let result = AnnouncementParser(players: players).parseScores(text)
+        return Set(players.filter { result.flipSevens.contains($0.id) }.map(\.name.value))
+    }
+
+    @Test func flipSevenBeforeOrAfterScore() {
+        #expect(scores("Max Flip 7 42 Oskar 5") == ["Max": 42, "Oskar": 5])
+        #expect(flipSevens("Max Flip 7 42 Oskar 5") == ["Max"])
+        #expect(flipSevens("Mila 38, Flip sieben, Oskar 3") == ["Mila"])
+        #expect(flipSevens("Valentin Flip7 40") == ["Valentin"])
+    }
+
+    @Test func flipSevenIgnoresBusts() {
+        #expect(flipSevens("Max Flip 7 verzockt") == [])
+        #expect(flipSevens("Max 7 Oskar 12") == [])
+    }
+
     @Test func gluedNameAndNumber() {
         #expect(scores("Max fünf | Valentin, zwölf | Oskarhundert") == ["Max": 5, "Valentin": 12, "Oskar": 100])
         #expect(scores("Mila achtundzwanzig, Max nein") == ["Mila": 28, "Max": 9])

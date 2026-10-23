@@ -25,6 +25,8 @@ final class AppModel {
     private(set) var lineup: [PlayerName] = []
     private(set) var unrecognized: [String] = []
     var isCelebrating = false
+    private(set) var flipMoment: FlipMoment?
+    private var celebratesAfterFlip = false
     var alert: String?
 
     let preferences: Preferences
@@ -194,6 +196,12 @@ final class AppModel {
         draft = RoundDraft()
         unrecognized = []
         persist(game)
+        let flippers = game.rounds.last.map { round in game.players.filter(round.hasFlipSeven) } ?? []
+        if !flippers.isEmpty {
+            celebratesAfterFlip = game.isFinished
+            showFlipMoment(of: flippers)
+            return
+        }
         switch status {
         case .finished:
             sounds.play(.win)
@@ -210,6 +218,8 @@ final class AppModel {
         game.undoLastRound()
         self.game = game
         isCelebrating = false
+        flipMoment = nil
+        celebratesAfterFlip = false
         persist(game)
         sounds.play(.undo)
     }
@@ -224,6 +234,27 @@ final class AppModel {
             sounds.play(.win)
             isCelebrating = true
         }
+    }
+
+    func markFlipSeven(_ isFlipSeven: Bool, in round: Round, of player: Player) {
+        guard var game else { return }
+        game.markFlipSeven(isFlipSeven, round: round.id, player: player)
+        self.game = game
+        persist(game)
+        if isFlipSeven { showFlipMoment(of: [player]) }
+    }
+
+    func endFlipMoment() {
+        flipMoment = nil
+        guard celebratesAfterFlip else { return }
+        celebratesAfterFlip = false
+        sounds.play(.win)
+        isCelebrating = true
+    }
+
+    private func showFlipMoment(of players: [Player]) {
+        flipMoment = FlipMoment(names: players.map(\.name.value))
+        sounds.play(.flipSeven)
     }
 
     func deleteFromHistory(_ id: Game.ID) {
@@ -346,4 +377,9 @@ final class AppModel {
             alert = "Speichern fehlgeschlagen: \(error)"
         }
     }
+}
+
+struct FlipMoment: Identifiable {
+    let id = UUID()
+    let names: [String]
 }

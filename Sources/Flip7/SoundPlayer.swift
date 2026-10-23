@@ -8,6 +8,7 @@ struct SoundPlayer {
         case undo
         case win
         case tie
+        case flipSeven
     }
 
     let isEnabled: () -> Bool
@@ -25,11 +26,13 @@ struct SoundPlayer {
         case .undo: NSSound(named: "Bottle")
         case .win: NSSound(named: "Hero")
         case .tie: NSSound(named: "Purr")
+        case .flipSeven: NSSound(data: Self.fanfare)
         }
     }
 
     private static let rising = Tone.chirp([784, 1175])
     private static let falling = Tone.chirp([1175, 784])
+    private static let fanfare = Tone.chirp([523, 659, 784, 1047, 1319, 1568, 2093], noteLength: 0.075)
 }
 
 private enum Tone {

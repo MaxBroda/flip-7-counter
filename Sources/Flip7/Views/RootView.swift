@@ -21,6 +21,11 @@ struct RootView: View {
                 VictoryView(game: game)
                     .transition(.opacity)
             }
+            if let moment = model.flipMoment {
+                FlipSevenView(moment: moment, onFinish: model.endFlipMoment)
+                    .id(moment.id)
+                    .transition(.opacity.combined(with: .scale(scale: 1.1)))
+            }
             if showsIntro {
                 IntroView(target: model.preferences.targetScore) {
                     withAnimation(.easeOut(duration: 0.45)) { showsIntro = false }
@@ -30,6 +35,7 @@ struct RootView: View {
             }
         }
         .animation(.easeInOut(duration: 0.3), value: model.isCelebrating)
+        .animation(.easeInOut(duration: 0.3), value: model.flipMoment?.id)
         .task(id: showsIntro) {
             if !showsIntro { await model.prepareSpeech() }
         }

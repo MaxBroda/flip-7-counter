@@ -50,7 +50,7 @@ private struct Leaderboard: View {
     var body: some View {
         Grid(alignment: .leading, horizontalSpacing: 18, verticalSpacing: 10) {
             GridRow {
-                ForEach(["", "Spieler", "Spiele", "Siege", "Quote", "Höchster Sieg", "Beste Runde", "Ø Runde", "Verzockt", ""], id: \.self) { title in
+                ForEach(["", "Spieler", "Spiele", "Siege", "Quote", "Höchster Sieg", "Beste Runde", "Ø Runde", "Flip 7", "Verzockt", ""], id: \.self) { title in
                     Text(title).font(Theme.rounded(12, .heavy)).foregroundStyle(Theme.navy.opacity(0.5))
                 }
             }
@@ -64,6 +64,7 @@ private struct Leaderboard: View {
                     HighestWin(value: stat.highestWin, isRecord: stat.highestWin != nil && stat.highestWin == record)
                     Text("\(stat.bestRound)")
                     Text(stat.averageRound.formatted(.number.precision(.fractionLength(1))))
+                    Text(stat.flipSevens > 0 ? "✨ \(stat.flipSevens)" : "–")
                     Text(stat.bustRate.formatted(.percent.precision(.fractionLength(0)))).foregroundStyle(Theme.coral)
                     PlayerMenu(name: stat.name, confirm: confirm)
                 }

@@ -24,8 +24,11 @@ struct ScoreTable: View {
                                     ScoreCell(
                                         points: round.points(for: player),
                                         total: game.total(of: player, afterRounds: index + 1),
-                                        editable: editable
-                                    ) { model.correct(round, of: player, to: $0) }
+                                        isFlipSeven: round.hasFlipSeven(player),
+                                        editable: editable,
+                                        onCorrect: { model.correct(round, of: player, to: $0) },
+                                        onFlipSeven: { model.markFlipSeven($0, in: round, of: player) }
+                                    )
                                 } else {
                                     Color.clear.frame(height: 1)
                                 }
@@ -74,8 +77,10 @@ struct ScoreTable: View {
 private struct ScoreCell: View {
     let points: Points
     let total: Int
+    let isFlipSeven: Bool
     let editable: Bool
     let onCorrect: (Points) -> Void
+    let onFlipSeven: (Bool) -> Void
 
     @State private var editing = false
     @State private var hovering = false
@@ -114,6 +119,12 @@ private struct ScoreCell: View {
                     Button("Verzockt") { text = "0"; save() }
                     Button("Speichern", action: save).keyboardShortcut(.defaultAction)
                 }
+                if !points.isBust {
+                    Button(isFlipSeven ? "Kein Flip 7" : "✨ Flip 7") {
+                        onFlipSeven(!isFlipSeven)
+                        editing = false
+                    }
+                }
             }
             .padding(16)
         }
@@ -133,7 +144,7 @@ private struct ScoreCell: View {
         if points.isBust {
             Text("\(total)").font(Theme.rounded(12, .bold)).foregroundStyle(Theme.navy.opacity(0.4))
         } else {
-            Text("+\(points.value)").font(Theme.rounded(12, .bold)).foregroundStyle(Theme.teal)
+            Text(isFlipSeven ? "✨+\(points.value)" : "+\(points.value)").font(Theme.rounded(12, .bold)).foregroundStyle(Theme.teal)
         }
     }
 

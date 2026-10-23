@@ -9,10 +9,12 @@ Kleine Mac-App zum Mitzählen bei [Flip 7](https://www.kosmos.de/de/flip-7_16854
   - Namen und Zahlen dürfen verschiedene Leute sagen: „Mila“ – Mila antwortet „26“.
   - „Oskar und Mila 26“ gibt beiden 26 Punkte. Ohne „und“ bekommt nur der letzte Name die Zahl.
   - „null“, „verzockt“ und „raus“ zählen als 0.
+  - „Max Flip 7 42“ oder „Max 42, Flip 7“ markiert einen Flip 7: Nach dem Buchen gibt es eine eigene Animation, in der Tabelle steht ✨. Nachträglich geht das über einen Klick auf die Zelle.
+- **Pech-Serie:** Wer dreimal oder öfter in Folge verzockt, bekommt einen 💀 mit Zähler auf seine Karte.
 - **Spielende:** Hat am Ende einer Runde jemand die Zielpunktzahl (Standard 200) erreicht, gewinnt die höchste Summe. Bei Gleichstand auf Platz 1 folgt eine Extrarunde.
 - **Spieler nachträglich:** Über das Personen-Symbol oben im Spiel steigt jemand mitten im Spiel ein. Er startet mit 0 Punkten, frühere Runden zählen für ihn nicht in die Statistik.
 - **Korrektur:** Gebuchte Zellen lassen sich anklicken. **⌘Z** nimmt die letzte Runde zurück, auch nach dem Sieg.
-- **Historie:** Rangliste mit Siegen, höchstem Sieg, bester Runde, Ø pro Runde und Verzockt-Quote, dazu alle Spiele mit kompletter Tabelle. Über das ⋯-Menü lässt sich ein Spieler zurücksetzen oder aus der Rangliste entfernen, ein einzelnes Spiel über den Mülleimer löschen.
+- **Historie:** Rangliste mit Siegen, höchstem Sieg, bester Runde, Ø pro Runde, Flip 7s und Verzockt-Quote, dazu alle Spiele mit kompletter Tabelle. Über das ⋯-Menü lässt sich ein Spieler zurücksetzen oder aus der Rangliste entfernen, ein einzelnes Spiel über den Mülleimer löschen.
 - **Geteilt / Privat:** Der Schalter oben links legt fest, in welche Statistik die Spiele zählen. *Geteilt* wird über Supabase abgeglichen, *Privat* bleibt auf diesem Mac und hat eigene Rangliste und Namensvorschläge. Ein laufendes Spiel wandert beim Umschalten mit, beendete bleiben, wo sie gezählt wurden. Die Auswahl gilt pro Mac.
 - **Einstellungen (⌘,):** Namensliste für die Spracherkennung (z. B. „Pratiksha“, „Jafar“), Sprechtaste, Zielpunktzahl, Sounds, Startanimation, geteilte Historie, Historie löschen.
 

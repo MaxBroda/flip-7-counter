@@ -2,6 +2,7 @@ import Foundation
 
 public struct ScoreAnnouncement: Equatable, Sendable {
     public let scores: [UUID: Points]
+    public let flipSevens: Set<UUID>
     public let unrecognized: [String]
 }
 
@@ -26,7 +27,10 @@ public struct AnnouncementParser {
         "der", "die", "das", "bei", "auch", "plus", "runde", "also", "ah", "ahm", "ok", "okay", "dann", "spieler",
     ]
 
-    public static var scoreVocabulary: [String] { GermanNumber.spokenForms }
+    private static let flipWords: Set<String> = ["flip", "flipp", "flips", "flipps"]
+    private static let sevenWords: Set<String> = ["7", "sieben", "seven"]
+
+    public static var scoreVocabulary: [String] { GermanNumber.spokenForms + ["Flip 7", "Flip Seven"] }
 
     private let players: [Player]
     private let matcher: NameMatcher<Player>
@@ -40,6 +44,8 @@ public struct AnnouncementParser {
         let tokens = Self.tokenize(text).flatMap(splitGluedNumber)
         var scores: [UUID: Points] = [:]
         var pending: [Player] = []
+        var lastScored: [Player] = []
+        var flipSevens: Set<UUID> = []
         var joinsPending = false
         var unrecognized: [String] = []
         var index = 0
@@ -49,9 +55,15 @@ public struct AnnouncementParser {
             if tokens[index] == "und", !pending.isEmpty {
                 joinsPending = true
                 index += 1
+            } else if let consumed = readFlipSeven(tokens, at: index) {
+                // „Max Flip 7, 42“ meint den genannten Spieler, „Max 42, Flip 7“ den zuletzt gewerteten.
+                (pending.isEmpty ? lastScored : pending).forEach { flipSevens.insert($0.id) }
+                joinsPending = joins
+                index += consumed
             } else if let (value, consumed) = readNumber(tokens, at: index) {
                 if let points = Points(value) {
                     pending.forEach { scores[$0.id] = points }
+                    lastScored = pending
                 } else {
                     unrecognized.append(tokens[index])
                 }
@@ -66,7 +78,11 @@ public struct AnnouncementParser {
                 index += 1
             }
         }
-        return ScoreAnnouncement(scores: scores, unrecognized: unrecognized)
+        return ScoreAnnouncement(
+            scores: scores,
+            flipSevens: flipSevens.filter { scores[$0]?.isBust != true },
+            unrecognized: unrecognized
+        )
     }
 
     public static func parseLineup(_ text: String, known: [PlayerName]) -> LineupAnnouncement {
@@ -134,6 +150,15 @@ public struct AnnouncementParser {
             if GermanNumber.parse(rest) != nil { return [player.name.key, rest] }
         }
         return [token]
+    }
+
+    private func readFlipSeven(_ tokens: [String], at index: Int) -> Int? {
+        let token = tokens[index]
+        if ["flipseven", "flipsieben"].contains(token) { return 1 }
+        guard Self.flipWords.contains(token), index + 1 < tokens.count, Self.sevenWords.contains(tokens[index + 1]) else {
+            return nil
+        }
+        return 2
     }
 
     private func readNumber(_ tokens: [String], at index: Int) -> (Int, Int)? {
