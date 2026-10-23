@@ -41,6 +41,12 @@ swift test                        # Domain- und Parser-Tests
 
 Voraussetzung: macOS 27, Xcode 27.
 
+## Updates
+
+In den Einstellungen unter *Updates* prüft **Nach Updates suchen**, ob auf GitHub neue Commits liegen, und listet sie auf. **Jetzt updaten** führt nach einer Rückfrage `git pull --ff-only` und `scripts/build-app.sh` im Projektordner aus, ersetzt die installierte App und startet sie neu. Schlägt ein Schritt fehl, läuft die alte Version weiter.
+
+Den Projektordner und den Commit schreibt `build-app.sh` in die `Info.plist` der App. Eine App, die vor dieser Funktion gebaut wurde, muss deshalb einmal von Hand neu gebaut werden. Eigene Änderungen im Projektordner blockieren das Update.
+
 ## Aufbau
 
 | Pfad | Inhalt |

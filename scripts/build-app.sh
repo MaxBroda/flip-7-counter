@@ -18,6 +18,9 @@ iconutil -c icns build/AppIcon.iconset -o "$APP/Contents/Resources/AppIcon.icns"
 
 cp "$(swift build -c release --show-bin-path)/Flip7" "$APP/Contents/MacOS/Flip7"
 cp App/Info.plist "$APP/Contents/Info.plist"
+# Damit „Nach Updates suchen“ in den Einstellungen weiß, wo es pullen und bauen soll.
+/usr/libexec/PlistBuddy -c "Add :Flip7SourceDirectory string $PWD" "$APP/Contents/Info.plist"
+/usr/libexec/PlistBuddy -c "Add :Flip7Commit string $(git rev-parse --short HEAD 2>/dev/null || echo unbekannt)" "$APP/Contents/Info.plist"
 codesign --force --sign - "$APP"
 
 if [[ "${1:-}" == "--install" ]]; then

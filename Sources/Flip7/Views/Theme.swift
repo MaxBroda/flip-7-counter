@@ -341,6 +341,7 @@ struct Confirmation: Identifiable {
     let title: String
     let message: String
     let confirm: String
+    var tint: Color = Theme.coral
     let action: () -> Void
 }
 
@@ -372,7 +373,7 @@ private struct ThemedConfirmation: ViewModifier {
                                     self.confirmation = nil
                                     confirmation.action()
                                 }
-                                .buttonStyle(ChunkyButtonStyle(fill: Theme.coral, size: 16))
+                                .buttonStyle(ChunkyButtonStyle(fill: confirmation.tint, size: 16))
                             }
                             .padding(.top, 4)
                         }

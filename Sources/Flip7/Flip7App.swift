@@ -11,11 +11,13 @@ struct Flip7App: App {
         preferences: Preferences(),
         speech: SpeechRecorder()
     )
+    @State private var updater = Updater()
 
     var body: some Scene {
         Window("Flip 7", id: "main") {
             RootView(showsIntro: model.preferences.showsIntro)
                 .environment(model)
+                .environment(updater)
                 .preferredColorScheme(.light)
         }
         .windowStyle(.hiddenTitleBar)
