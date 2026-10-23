@@ -6,22 +6,26 @@ struct GameView: View {
     let game: Game
     @State private var confirmsAbandon = false
     @State private var addsPlayer = false
+    @State private var showsMenu = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: 18) {
             header
             StandingsStrip(game: game, draft: model.draft)
+                .padding(.horizontal, Theme.panelInset)
             Panel {
                 ScoreTable(game: game, draft: game.isFinished ? nil : model.draft, editable: true)
             }
             controls
         }
         .padding(28)
-        .confirmationDialog("Spiel wirklich abbrechen?", isPresented: $confirmsAbandon) {
-            Button("Abbrechen und löschen", role: .destructive, action: model.abandonGame)
-        } message: {
-            Text("Das Spiel taucht nicht in der Historie auf.")
-        }
+        .themedConfirmation(
+            "Spiel wirklich abbrechen?",
+            message: "Das Spiel taucht nicht in der Historie auf.",
+            confirm: "Abbrechen und löschen",
+            isPresented: $confirmsAbandon,
+            action: model.abandonGame
+        )
     }
 
     private var header: some View {
@@ -56,17 +60,28 @@ struct GameView: View {
                 .padding(.vertical, 5)
                 .background(Pill().fill(Theme.yellow))
                 .overlay(Pill().strokeBorder(Theme.navy, lineWidth: 2))
-            Menu {
-                Button("Neues Spiel (dieses bleibt gespeichert)", action: model.closeGame)
-                Button("Spiel abbrechen …", role: .destructive) { confirmsAbandon = true }
+            Button {
+                showsMenu = true
             } label: {
                 Image(systemName: "ellipsis.circle.fill").font(.system(size: 22)).foregroundStyle(Theme.navy)
             }
-            .menuStyle(.button)
             .buttonStyle(.plain)
-            .menuIndicator(.hidden)
-            .fixedSize()
             .hoverLift(1.15)
+            .popover(isPresented: $showsMenu, arrowEdge: .bottom) {
+                VStack(alignment: .leading, spacing: 4) {
+                    MenuRow(title: "Neues Spiel", detail: "Dieses bleibt gespeichert", symbol: "plus.circle.fill") {
+                        showsMenu = false
+                        model.closeGame()
+                    }
+                    MenuRow(title: "Spiel abbrechen …", detail: "Wird nicht gespeichert", symbol: "xmark.circle.fill", tint: Theme.coral) {
+                        showsMenu = false
+                        confirmsAbandon = true
+                    }
+                }
+                .padding(8)
+                .frame(width: 260)
+                .presentationBackground(Theme.paper)
+            }
         }
     }
 
@@ -152,7 +167,7 @@ private struct StandingsStrip: View {
     let draft: RoundDraft
 
     var body: some View {
-        HStack(spacing: 12) {
+        Columns {
             ForEach(Array(game.players.enumerated()), id: \.element.id) { index, player in
                 StandingCard(
                     player: player,
@@ -185,9 +200,12 @@ private struct StandingCard: View {
                     .font(Theme.rounded(15, .heavy))
                     .foregroundStyle(Theme.navy)
                     .lineLimit(1)
+                    .minimumScaleFactor(0.6)
             }
             Text("\(total)")
                 .font(Theme.display(38))
+                .lineLimit(1)
+                .minimumScaleFactor(0.5)
                 .foregroundStyle(Theme.navy)
                 .contentTransition(.numericText(value: Double(total)))
             ProgressBar(value: Double(total) / Double(target), color: color)
@@ -219,6 +237,8 @@ private struct StandingCard: View {
         if let pending {
             Text(pending.isBust ? "verzockt" : "+\(pending.value)")
                 .font(Theme.rounded(14, .black))
+                .lineLimit(1)
+                .minimumScaleFactor(0.6)
                 .foregroundStyle(pending.isBust ? Theme.paper : Theme.navy)
                 .padding(.horizontal, 10)
                 .padding(.vertical, 2)

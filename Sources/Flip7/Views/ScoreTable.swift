@@ -8,20 +8,17 @@ struct ScoreTable: View {
     let editable: Bool
 
     var body: some View {
-        GeometryReader { geometry in
         ScrollViewReader { proxy in
-            ScrollView([.vertical, .horizontal]) {
-                Grid(horizontalSpacing: 0, verticalSpacing: 0) {
-                    GridRow {
-                        headerCell("#")
+            ScrollView(.vertical) {
+                VStack(spacing: 0) {
+                    Columns {
                         ForEach(Array(game.players.enumerated()), id: \.element.id) { index, player in
                             headerCell(player.name.value, dot: Theme.color(forPlayerAt: index))
                         }
                     }
-                    Divider().overlay(Theme.navy).gridCellUnsizedAxes(.horizontal)
+                    Divider().overlay(Theme.navy)
                     ForEach(Array(game.rounds.enumerated()), id: \.element.id) { index, round in
-                        GridRow {
-                            roundLabel(index + 1)
+                        Columns {
                             ForEach(game.players) { player in
                                 if game.hasJoined(player, by: index) {
                                     ScoreCell(
@@ -30,15 +27,14 @@ struct ScoreTable: View {
                                         editable: editable
                                     ) { model.correct(round, of: player, to: $0) }
                                 } else {
-                                    Color.clear.frame(minWidth: 90, maxWidth: .infinity, maxHeight: 1)
+                                    Color.clear.frame(height: 1)
                                 }
                             }
                         }
                         .background(index.isMultiple(of: 2) ? Theme.mint.opacity(0.18) : .clear)
                     }
                     if let draft {
-                        GridRow {
-                            roundLabel(game.rounds.count + 1)
+                        Columns {
                             ForEach(game.players) { player in
                                 DraftCell(points: draft.points(for: player), base: game.total(of: player), onSubmit: model.bookRound) {
                                     model.setDraft($0, for: player)
@@ -50,13 +46,11 @@ struct ScoreTable: View {
                     }
                 }
                 .padding(.bottom, 4)
-                .frame(minWidth: geometry.size.width, alignment: .leading)
             }
             .onChange(of: game.rounds.count) {
                 NSApp.keyWindow?.makeFirstResponder(nil)
                 withAnimation { proxy.scrollTo("draft", anchor: .bottom) }
             }
-        }
         }
         .frame(minHeight: 120)
     }
@@ -70,18 +64,10 @@ struct ScoreTable: View {
                 .font(Theme.rounded(14, .black))
                 .foregroundStyle(Theme.navy)
                 .lineLimit(1)
+                .minimumScaleFactor(0.6)
         }
-            .frame(minWidth: 40)
             .padding(.vertical, 8)
             .frame(maxWidth: .infinity)
-    }
-
-    private func roundLabel(_ number: Int) -> some View {
-        Text("\(number)")
-            .font(Theme.rounded(13, .bold))
-            .foregroundStyle(Theme.navy.opacity(0.45))
-            .frame(width: 36)
-            .padding(.vertical, 8)
     }
 }
 
@@ -100,16 +86,14 @@ private struct ScoreCell: View {
             text = "\(points.value)"
             editing = editable
         } label: {
-            HStack(alignment: .firstTextBaseline, spacing: 6) {
-                if points.isBust {
-                    Text("–").font(Theme.display(22)).foregroundStyle(Theme.coral)
-                    Text("\(total)").font(Theme.rounded(12, .bold)).foregroundStyle(Theme.navy.opacity(0.4))
-                } else {
-                    Text("\(total)").font(Theme.display(22)).foregroundStyle(Theme.navy)
-                    Text("+\(points.value)").font(Theme.rounded(12, .bold)).foregroundStyle(Theme.teal)
+            ViewThatFits(in: .horizontal) {
+                HStack(alignment: .firstTextBaseline, spacing: 6) {
+                    primary
+                    secondary
                 }
+                primary
             }
-            .frame(minWidth: 90, maxWidth: .infinity)
+            .frame(maxWidth: .infinity)
             .padding(.vertical, 6)
             .background(RoundedRectangle(cornerRadius: 8).fill(Theme.yellow.opacity(editable && hovering ? 0.35 : 0)))
             .contentShape(Rectangle())
@@ -132,6 +116,24 @@ private struct ScoreCell: View {
                 }
             }
             .padding(16)
+        }
+    }
+
+    @ViewBuilder
+    private var primary: some View {
+        if points.isBust {
+            Text("–").font(Theme.display(22)).foregroundStyle(Theme.coral)
+        } else {
+            Text("\(total)").font(Theme.display(22)).foregroundStyle(Theme.navy)
+        }
+    }
+
+    @ViewBuilder
+    private var secondary: some View {
+        if points.isBust {
+            Text("\(total)").font(Theme.rounded(12, .bold)).foregroundStyle(Theme.navy.opacity(0.4))
+        } else {
+            Text("+\(points.value)").font(Theme.rounded(12, .bold)).foregroundStyle(Theme.teal)
         }
     }
 
@@ -170,9 +172,11 @@ private struct DraftCell: View {
                 Text(points.isBust ? "–" : "→ \(base + points.value)")
                     .font(Theme.rounded(12, .bold))
                     .foregroundStyle(Theme.navy.opacity(0.5))
+                    .lineLimit(1)
+                    .layoutPriority(-1)
             }
         }
-        .frame(minWidth: 90, maxWidth: .infinity)
+        .frame(maxWidth: .infinity)
         .padding(.vertical, 6)
         .onAppear { sync() }
         .onChange(of: points) { if Int(text) != points?.value { sync() } }

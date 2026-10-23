@@ -15,6 +15,7 @@ enum Theme {
     static let purple = Color(hex: 0x9B5BB5)
 
     static let fan: [Color] = [teal, coral, blue, yellow, pink, paper, lime]
+    static let panelInset: CGFloat = 18
     static let players: [Color] = [teal, coral, blue, orange, pink, purple, lime, yellow]
 
     static func color(forPlayerAt index: Int) -> Color {
@@ -199,7 +200,7 @@ struct Panel<Content: View>: View {
 
     var body: some View {
         content
-            .padding(18)
+            .padding(Theme.panelInset)
             .background {
                 RoundedRectangle(cornerRadius: 18).fill(Theme.navy).offset(x: 4, y: 5)
                 RoundedRectangle(cornerRadius: 18).fill(fill)
@@ -260,5 +261,114 @@ struct Pill: InsettableShape {
 
     func inset(by amount: CGFloat) -> Pill {
         Pill(inset: inset + amount)
+    }
+}
+
+/// Gleich breite Spalten, damit Spielstand-Karten und Tabellenspalten exakt übereinander liegen.
+struct Columns: Layout {
+    static let spacing: CGFloat = 12
+
+    func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize {
+        let width = proposal.width ?? subviews.map { $0.sizeThatFits(.unspecified).width }.max().map { $0 * CGFloat(subviews.count) + gaps(subviews) } ?? 0
+        let column = columnWidth(width, subviews)
+        let height = subviews.map { $0.sizeThatFits(ProposedViewSize(width: column, height: nil)).height }.max() ?? 0
+        return CGSize(width: width, height: height)
+    }
+
+    func placeSubviews(in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) {
+        let column = columnWidth(bounds.width, subviews)
+        for index in subviews.indices {
+            let x = bounds.minX + CGFloat(index) * (column + Self.spacing)
+            subviews[index].place(at: CGPoint(x: x, y: bounds.minY), proposal: ProposedViewSize(width: column, height: bounds.height))
+        }
+    }
+
+    private func gaps(_ subviews: Subviews) -> CGFloat {
+        CGFloat(max(subviews.count - 1, 0)) * Self.spacing
+    }
+
+    private func columnWidth(_ width: CGFloat, _ subviews: Subviews) -> CGFloat {
+        subviews.isEmpty ? 0 : max((width - gaps(subviews)) / CGFloat(subviews.count), 0)
+    }
+}
+
+struct MenuRow: View {
+    let title: String
+    let detail: String
+    let symbol: String
+    var tint: Color = Theme.navy
+    let action: () -> Void
+
+    @State private var hovering = false
+
+    var body: some View {
+        Button(action: action) {
+            HStack(spacing: 10) {
+                Image(systemName: symbol).font(.system(size: 20)).foregroundStyle(tint)
+                VStack(alignment: .leading, spacing: 1) {
+                    Text(title).font(Theme.rounded(14, .heavy)).foregroundStyle(tint)
+                    Text(detail).font(Theme.rounded(11, .medium)).foregroundStyle(Theme.navy.opacity(0.55))
+                }
+                Spacer(minLength: 0)
+            }
+            .padding(.horizontal, 10)
+            .padding(.vertical, 8)
+            .background(RoundedRectangle(cornerRadius: 10).fill(Theme.yellow.opacity(hovering ? 0.4 : 0)))
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .onHover { hovering = $0 }
+        .pointerStyle(.link)
+        .animation(.easeOut(duration: 0.12), value: hovering)
+    }
+}
+
+private struct ThemedConfirmation: ViewModifier {
+    let title: String
+    let message: String
+    let confirm: String
+    @Binding var isPresented: Bool
+    let action: () -> Void
+
+    func body(content: Content) -> some View {
+        content.overlay {
+            if isPresented {
+                ZStack {
+                    Theme.navy.opacity(0.35)
+                        .ignoresSafeArea()
+                        .onTapGesture { isPresented = false }
+                    Panel {
+                        VStack(spacing: 14) {
+                            Text(title).font(Theme.display(24)).foregroundStyle(Theme.navy)
+                            Text(message)
+                                .font(Theme.rounded(14, .medium))
+                                .foregroundStyle(Theme.navy.opacity(0.7))
+                                .multilineTextAlignment(.center)
+                            HStack(spacing: 12) {
+                                Button("Zurück") { isPresented = false }
+                                    .buttonStyle(ChunkyButtonStyle(fill: Theme.paper, size: 16))
+                                    .keyboardShortcut(.cancelAction)
+                                Button(confirm) {
+                                    isPresented = false
+                                    action()
+                                }
+                                .buttonStyle(ChunkyButtonStyle(fill: Theme.coral, size: 16))
+                            }
+                            .padding(.top, 4)
+                        }
+                        .padding(8)
+                    }
+                    .frame(maxWidth: 420)
+                    .transition(.scale(scale: 0.9).combined(with: .opacity))
+                }
+            }
+        }
+        .animation(.spring(duration: 0.3, bounce: 0.3), value: isPresented)
+    }
+}
+
+extension View {
+    func themedConfirmation(_ title: String, message: String, confirm: String, isPresented: Binding<Bool>, action: @escaping () -> Void) -> some View {
+        modifier(ThemedConfirmation(title: title, message: message, confirm: confirm, isPresented: isPresented, action: action))
     }
 }
