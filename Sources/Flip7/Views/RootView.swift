@@ -67,6 +67,7 @@ private struct TopBar: View {
                 CardFan(cardSize: CGSize(width: 16, height: 25))
                 Flip7Logo(size: 26)
             }
+            SpaceToggle()
             Spacer()
             tab("Spiel", systemImage: "suit.spade.fill", screen: .play)
             tab("Historie", systemImage: "trophy.fill", screen: .history)
@@ -82,6 +83,45 @@ private struct TopBar: View {
         TabButton(title: title, systemImage: systemImage, isActive: model.screen == screen) {
             withAnimation(.spring(duration: 0.3)) { model.screen = screen }
         }
+    }
+}
+
+private struct SpaceToggle: View {
+    @Environment(AppModel.self) private var model
+    @Namespace private var knob
+
+    var body: some View {
+        HStack(spacing: 0) {
+            ForEach(HistorySpace.allCases, id: \.self) { space in
+                segment(space)
+            }
+        }
+        .padding(3)
+        .background(Pill().fill(Theme.paper))
+        .overlay(Pill().strokeBorder(Theme.navy, lineWidth: 2))
+        .animation(.spring(duration: 0.35, bounce: 0.35), value: model.space)
+        .help("Wo die Spiele zählen. Privat bleibt auf diesem Mac und geht nie an Supabase.")
+    }
+
+    private func segment(_ space: HistorySpace) -> some View {
+        let isActive = model.space == space
+        return Button {
+            model.switchSpace(to: space)
+        } label: {
+            Label(space.title, systemImage: space.symbol)
+                .font(Theme.rounded(13, .heavy))
+                .foregroundStyle(isActive ? Theme.paper : Theme.navy)
+                .padding(.horizontal, 11)
+                .padding(.vertical, 5)
+                .background {
+                    if isActive {
+                        Pill().fill(Theme.navy).matchedGeometryEffect(id: "knob", in: knob)
+                    }
+                }
+                .contentShape(Pill())
+        }
+        .buttonStyle(.plain)
+        .pointerStyle(.link)
     }
 }
 

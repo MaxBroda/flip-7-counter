@@ -6,7 +6,7 @@ import SwiftUI
 struct Flip7App: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) private var delegate
     @State private var model = AppModel(
-        store: .applicationSupport("library.json"),
+        stores: { .applicationSupport($0.fileName) },
         sharing: HistorySync(outboxStore: .applicationSupport("outbox.json")),
         preferences: Preferences(),
         speech: SpeechRecorder()

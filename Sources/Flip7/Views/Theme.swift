@@ -323,34 +323,54 @@ struct MenuRow: View {
     }
 }
 
-private struct ThemedConfirmation: ViewModifier {
+struct MenuPopover<Content: View>: View {
+    @ViewBuilder let content: Content
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            content
+        }
+        .padding(8)
+        .frame(width: 260)
+        .presentationBackground(Theme.paper)
+    }
+}
+
+struct Confirmation: Identifiable {
+    let id = UUID()
     let title: String
     let message: String
     let confirm: String
-    @Binding var isPresented: Bool
     let action: () -> Void
+}
+
+private struct ThemedConfirmation: ViewModifier {
+    @Binding var confirmation: Confirmation?
 
     func body(content: Content) -> some View {
         content.overlay {
-            if isPresented {
+            if let confirmation {
                 ZStack {
                     Theme.navy.opacity(0.35)
                         .ignoresSafeArea()
-                        .onTapGesture { isPresented = false }
+                        .onTapGesture { self.confirmation = nil }
                     Panel {
                         VStack(spacing: 14) {
-                            Text(title).font(Theme.display(24)).foregroundStyle(Theme.navy)
-                            Text(message)
+                            Text(confirmation.title)
+                                .font(Theme.display(24))
+                                .foregroundStyle(Theme.navy)
+                                .multilineTextAlignment(.center)
+                            Text(confirmation.message)
                                 .font(Theme.rounded(14, .medium))
                                 .foregroundStyle(Theme.navy.opacity(0.7))
                                 .multilineTextAlignment(.center)
                             HStack(spacing: 12) {
-                                Button("Zurück") { isPresented = false }
+                                Button("Zurück") { self.confirmation = nil }
                                     .buttonStyle(ChunkyButtonStyle(fill: Theme.paper, size: 16))
                                     .keyboardShortcut(.cancelAction)
-                                Button(confirm) {
-                                    isPresented = false
-                                    action()
+                                Button(confirmation.confirm) {
+                                    self.confirmation = nil
+                                    confirmation.action()
                                 }
                                 .buttonStyle(ChunkyButtonStyle(fill: Theme.coral, size: 16))
                             }
@@ -358,17 +378,17 @@ private struct ThemedConfirmation: ViewModifier {
                         }
                         .padding(8)
                     }
-                    .frame(maxWidth: 420)
+                    .frame(maxWidth: 440)
                     .transition(.scale(scale: 0.9).combined(with: .opacity))
                 }
             }
         }
-        .animation(.spring(duration: 0.3, bounce: 0.3), value: isPresented)
+        .animation(.spring(duration: 0.3, bounce: 0.3), value: confirmation?.id)
     }
 }
 
 extension View {
-    func themedConfirmation(_ title: String, message: String, confirm: String, isPresented: Binding<Bool>, action: @escaping () -> Void) -> some View {
-        modifier(ThemedConfirmation(title: title, message: message, confirm: confirm, isPresented: isPresented, action: action))
+    func themedConfirmation(_ confirmation: Binding<Confirmation?>) -> some View {
+        modifier(ThemedConfirmation(confirmation: confirmation))
     }
 }

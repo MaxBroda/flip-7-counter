@@ -4,7 +4,7 @@ import SwiftUI
 struct SettingsView: View {
     @Environment(AppModel.self) private var model
     @State private var recording = false
-    @State private var confirmsClear = false
+    @State private var confirmation: Confirmation?
     @State private var sharedURL = ""
     @State private var sharedKey = ""
     @State private var rejectsInput = false
@@ -40,11 +40,7 @@ struct SettingsView: View {
             .frame(maxWidth: 760, alignment: .leading)
             .frame(maxWidth: .infinity)
         }
-        .confirmationDialog("Gesamte Historie löschen?", isPresented: $confirmsClear) {
-            Button("Alles löschen", role: .destructive, action: model.clearHistory)
-        } message: {
-            Text("Alle abgeschlossenen Spiele und die Rangliste werden gelöscht. Ein laufendes Spiel bleibt erhalten.")
-        }
+        .themedConfirmation($confirmation)
         .onDisappear {
             recording = false
             model.cancelKeyCapture()
@@ -150,7 +146,7 @@ struct SettingsView: View {
             }
         } else {
             VStack(alignment: .leading, spacing: 12) {
-                Text("Alle Macs mit derselben Verbindung teilen Spiele und Rangliste. Laufende Partien bleiben lokal.")
+                Text("Alle Macs mit derselben Verbindung teilen Spiele und Rangliste. Laufende Partien und die private Statistik bleiben lokal.")
                     .settingCaption()
                 ThemedField(placeholder: "Project URL – https://….supabase.co", text: $sharedURL)
                 ThemedField(placeholder: "Publishable / anon key", text: $sharedKey, monospaced: true)
@@ -173,12 +169,19 @@ struct SettingsView: View {
 
     private var data: some View {
         SettingRow(
-            "Abgeschlossene Spiele: \(model.library.finished.count)",
-            caption: model.sharing.isConnected ? "Bei geteilter Historie gesperrt. Einzelne Spiele lassen sich in der Historie löschen." : nil
+            "Abgeschlossene Spiele (\(model.space.title)): \(model.library.finished.count)",
+            caption: model.locksClearHistory ? "Bei geteilter Historie gesperrt. Einzelne Spiele lassen sich in der Historie löschen." : nil
         ) {
-            Button("Historie löschen …") { confirmsClear = true }
+            Button("Historie löschen …") {
+                confirmation = Confirmation(
+                    title: "Gesamte Historie löschen?",
+                    message: "Alle abgeschlossenen Spiele und die Rangliste (\(model.space.title)) werden gelöscht. Ein laufendes Spiel bleibt erhalten.",
+                    confirm: "Alles löschen",
+                    action: model.clearHistory
+                )
+            }
                 .buttonStyle(ChunkyButtonStyle(fill: Theme.coral, size: 14))
-                .disabled(model.sharing.isConnected || model.library.finished.isEmpty && model.library.resets.isEmpty)
+                .disabled(model.locksClearHistory || model.library.finished.isEmpty && model.library.resets.isEmpty)
         }
     }
 

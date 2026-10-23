@@ -14,7 +14,12 @@ final class AppModel {
     var screen: Screen = .play {
         didSet { if screen == .history { synchronize() } }
     }
-    private(set) var library: Library
+    private(set) var space: HistorySpace
+    private var libraries: [HistorySpace: Library] = [:]
+    private(set) var library: Library {
+        get { libraries[space] ?? Library() }
+        set { libraries[space] = newValue }
+    }
     private(set) var game: Game?
     private(set) var draft = RoundDraft()
     private(set) var lineup: [PlayerName] = []
@@ -25,23 +30,27 @@ final class AppModel {
     let preferences: Preferences
     let speech: SpeechRecorder
     let sharing: HistorySync
-    private let store: JSONFileStore<Library>
+    private let stores: (HistorySpace) -> JSONFileStore<Library>
     private let sounds: SoundPlayer
     private let hotkeys: HotkeyMonitor
 
-    init(store: JSONFileStore<Library>, sharing: HistorySync, preferences: Preferences, speech: SpeechRecorder) {
-        self.store = store
+    init(stores: @escaping (HistorySpace) -> JSONFileStore<Library>, sharing: HistorySync, preferences: Preferences, speech: SpeechRecorder) {
+        self.stores = stores
+        self.space = preferences.historySpace
         self.sharing = sharing
         self.preferences = preferences
         self.speech = speech
         self.sounds = SoundPlayer { preferences.soundsEnabled }
         self.hotkeys = HotkeyMonitor { preferences.hotkey }
-        do {
-            library = try store.load() ?? Library()
-        } catch {
-            library = Library()
-            let backup = try? store.quarantine()
-            alert = "Spielstände konnten nicht gelesen werden. Die alte Datei liegt unter \(backup?.path ?? "–")."
+        for space in HistorySpace.allCases {
+            let store = stores(space)
+            do {
+                libraries[space] = try store.load() ?? Library()
+            } catch {
+                libraries[space] = Library()
+                let backup = try? store.quarantine()
+                alert = "Spielstände konnten nicht gelesen werden. Die alte Datei liegt unter \(backup?.path ?? "–")."
+            }
         }
         game = library.current
         if game == nil { lineup = lastLineup }
@@ -142,10 +151,30 @@ final class AppModel {
     func abandonGame() {
         if let game {
             library.remove(game.id)
-            sharing.delete(game.id)
+            share { $0.delete(game.id) }
         }
         save()
         closeGame()
+        synchronize()
+    }
+
+    /// Ein laufendes Spiel wandert mit, damit man auch nach dem Start noch umschalten kann.
+    /// Beendete Spiele bleiben, wo sie gezählt wurden.
+    func switchSpace(to target: HistorySpace) {
+        guard target != space else { return }
+        let running = game.flatMap { $0.isFinished ? nil : $0 }
+        if let running {
+            library.remove(running.id)
+            save()
+        }
+        space = target
+        preferences.historySpace = target
+        if let running {
+            library.save(running)
+            save()
+        } else if game != nil {
+            closeGame()
+        }
         synchronize()
     }
 
@@ -199,28 +228,30 @@ final class AppModel {
 
     func deleteFromHistory(_ id: Game.ID) {
         library.remove(id)
-        sharing.delete(id)
+        share { $0.delete(id) }
         save()
         synchronize()
     }
 
     func resetStats(of name: PlayerName) {
         library.resetStats(of: name)
-        sharing.publishReset(of: name)
+        share { $0.publishReset(of: name) }
         save()
         synchronize()
     }
 
     func removePlayer(_ name: PlayerName) {
         library.removePlayer(name)
-        sharing.publishReset(of: name)
+        share { $0.publishReset(of: name) }
         lineup.removeAll { $0 == name }
         save()
         synchronize()
     }
 
+    var locksClearHistory: Bool { space == .shared && sharing.isConnected }
+
     func clearHistory() {
-        guard !sharing.isConnected else { return }
+        guard !locksClearHistory else { return }
         library.clearHistory()
         save()
     }
@@ -241,11 +272,12 @@ final class AppModel {
     }
 
     func synchronize() {
-        guard sharing.isConnected else { return }
+        guard space == .shared, sharing.isConnected else { return }
         Task {
-            await sharing.run(library: { library }) { shared in
-                library.merge(shared, protecting: sharing.outbox)
-                save()
+            // Fest auf die geteilte Historie, falls während des Abgleichs umgeschaltet wird.
+            await sharing.run(library: { libraries[.shared] ?? Library() }) { shared in
+                libraries[.shared, default: Library()].merge(shared, protecting: sharing.outbox)
+                save(.shared)
             }
         }
     }
@@ -292,14 +324,24 @@ final class AppModel {
         library.save(game)
         save()
         if game.isFinished {
-            sharing.publish(game)
+            share { $0.publish(game) }
             synchronize()
         }
     }
 
+    /// Nur die geteilte Historie geht an Supabase.
+    private func share(_ change: (HistorySync) -> Void) {
+        guard space == .shared else { return }
+        change(sharing)
+    }
+
     private func save() {
+        save(space)
+    }
+
+    private func save(_ space: HistorySpace) {
         do {
-            try store.save(library)
+            try stores(space).save(libraries[space] ?? Library())
         } catch {
             alert = "Speichern fehlgeschlagen: \(error)"
         }

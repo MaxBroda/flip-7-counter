@@ -4,7 +4,7 @@ import SwiftUI
 struct GameView: View {
     @Environment(AppModel.self) private var model
     let game: Game
-    @State private var confirmsAbandon = false
+    @State private var confirmation: Confirmation?
     @State private var addsPlayer = false
     @State private var showsMenu = false
 
@@ -19,13 +19,7 @@ struct GameView: View {
             controls
         }
         .padding(28)
-        .themedConfirmation(
-            "Spiel wirklich abbrechen?",
-            message: "Das Spiel taucht nicht in der Historie auf.",
-            confirm: "Abbrechen und löschen",
-            isPresented: $confirmsAbandon,
-            action: model.abandonGame
-        )
+        .themedConfirmation($confirmation)
     }
 
     private var header: some View {
@@ -68,19 +62,21 @@ struct GameView: View {
             .buttonStyle(.plain)
             .hoverLift(1.15)
             .popover(isPresented: $showsMenu, arrowEdge: .bottom) {
-                VStack(alignment: .leading, spacing: 4) {
+                MenuPopover {
                     MenuRow(title: "Neues Spiel", detail: "Dieses bleibt gespeichert", symbol: "plus.circle.fill") {
                         showsMenu = false
                         model.closeGame()
                     }
                     MenuRow(title: "Spiel abbrechen …", detail: "Wird nicht gespeichert", symbol: "xmark.circle.fill", tint: Theme.coral) {
                         showsMenu = false
-                        confirmsAbandon = true
+                        confirmation = Confirmation(
+                            title: "Spiel wirklich abbrechen?",
+                            message: "Das Spiel taucht nicht in der Historie auf.",
+                            confirm: "Abbrechen und löschen",
+                            action: model.abandonGame
+                        )
                     }
                 }
-                .padding(8)
-                .frame(width: 260)
-                .presentationBackground(Theme.paper)
             }
         }
     }
