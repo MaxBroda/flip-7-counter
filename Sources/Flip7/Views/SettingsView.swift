@@ -235,7 +235,7 @@ struct SettingsView: View {
         switch updater.status {
         case .idle: "Holt die neueste Version von GitHub und baut sie auf diesem Mac."
         case .checking: "Suche nach Updates …"
-        case .upToDate: "Du hast die neueste Version."
+        case .upToDate: "Du hast die neueste Version 🎉"
         case .available(let changes): changes.count == 1 ? "1 Neuerung verfügbar:" : "\(changes.count) Neuerungen verfügbar:"
         case .installing: "Lade und baue die neue Version …"
         case .failed(let message): message
