@@ -1,0 +1,23 @@
+name: Supabase wachhalten
+
+# Supabase pausiert Free-Tier-Projekte nach 7 Tagen ohne Anfrage.
+# Dieser Workflow schickt taeglich eine Leseanfrage an die REST-API,
+# damit das Projekt aktiv bleibt. Secrets: SUPABASE_URL, SUPABASE_ANON_KEY.
+
+on:
+  schedule:
+    - cron: "17 6 * * *"   # taeglich 06:17 UTC
+  workflow_dispatch:        # erlaubt manuelles Ausloesen im Actions-Tab
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Leseanfrage an Supabase
+        run: |
+          curl --fail --silent --show-error \
+            "${SUPABASE_URL%/}/rest/v1/games?select=id&limit=1" \
+            -H "apikey: $SUPABASE_ANON_KEY"
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
