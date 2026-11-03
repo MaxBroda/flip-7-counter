@@ -2,23 +2,21 @@
 
 Kleine Mac-App zum Mitzählen bei [Flip 7](https://www.kosmos.de/de/flip-7_1685430_4002051685430). Rundenpunkte werden angesagt statt im Kopf addiert.
 
+## Herunterladen & Updates
+
+**App laden:** Die fertige App liegt auf der [Releases-Seite](https://github.com/MaxBroda/flip-7-counter/releases). Dort beim neuesten Eintrag die ZIP-Datei (`Flip-7-vN.zip`) herunterladen, entpacken und `Flip 7.app` in den Ordner *Programme* ziehen. Beim allerersten Start meldet macOS, dass die App nicht aus dem App Store kommt: einmal unter Systemeinstellungen → *Datenschutz & Sicherheit* nach unten scrollen und auf *Trotzdem öffnen* klicken. Danach startet sie wie jede andere App. Voraussetzung: Mac mit Apple-Chip und macOS 27.
+
+**Aktualisieren:** Die App hält sich selbst aktuell. In den Einstellungen (⌘,) unter *Updates* auf **Nach Updates suchen** klicken. Gibt es eine neuere Version, zeigt **Jetzt updaten** kurz, was neu ist, lädt die Version nach einer Rückfrage selbst herunter, ersetzt die App und startet neu. Spielstände und Einstellungen bleiben erhalten – nichts muss von Hand gelöscht oder neu heruntergeladen werden.
+
+> Wer die App über einen Release vor diesem Update-Feature geladen hat, lädt die nächste Version einmalig noch von Hand über die Releases-Seite. Ab dann läuft es automatisch.
+
+Hast du das Repository stattdessen geklont, aktualisiert derselbe Knopf über `git pull` und einen Neubau – die App erkennt selbst, welcher Weg passt.
+
 ## Bedienung
 
-- **Neues Spiel:** Die Spieler der letzten Partie sind vorausgewählt. Mit einem Klick auf einen Namen fliegt er raus. Weitere Namen tippen oder Leertaste halten und ansagen, z. B. „Kasimir und Bruno hinzufügen, Mathilda raus“. Füllwörter werden ignoriert, neue Namen nur übernommen, wenn die Erkennung sie großschreibt.
-- **Runde erfassen:** Leertaste halten und sagen: „Max 5, Oskar 0, Mila 26“. Die Werte erscheinen als Entwurf und lassen sich per Klick korrigieren. **↩** bucht die Runde. Wer nicht genannt wurde, bekommt `–` (0 Punkte).
-  - Namen und Zahlen dürfen verschiedene Leute sagen: „Mila“ – Mila antwortet „26“.
-  - „Oskar und Mila 26“ gibt beiden 26 Punkte. Ohne „und“ bekommt nur der letzte Name die Zahl.
-  - „null“, „verzockt“ und „raus“ zählen als 0.
-  - „Max Flip 7 42“ oder „Max 42, Flip 7“ markiert einen Flip 7: Nach dem Buchen gibt es eine eigene Animation, in der Tabelle steht ✨. Nachträglich geht das über einen Klick auf die Zelle.
-- **Pech-Serie:** Wer dreimal oder öfter in Folge verzockt, bekommt einen 💀 mit Zähler auf seine Karte.
-- **Spielende:** Hat am Ende einer Runde jemand die Zielpunktzahl (Standard 200) erreicht, gewinnt die höchste Summe. Bei Gleichstand auf Platz 1 folgt eine Extrarunde.
-- **Spieler nachträglich:** Über das Personen-Symbol oben im Spiel steigt jemand mitten im Spiel ein. Er startet mit 0 Punkten, frühere Runden zählen für ihn nicht in die Statistik.
-- **Korrektur:** Gebuchte Zellen lassen sich anklicken. **⌘Z** nimmt die letzte Runde zurück, auch nach dem Sieg.
-- **Historie:** Rangliste mit Siegen, höchstem Sieg, bester Runde, Ø pro Runde, Flip 7s und Verzockt-Quote, dazu alle Spiele mit kompletter Tabelle. Über das ⋯-Menü lässt sich ein Spieler zurücksetzen oder aus der Rangliste entfernen, ein einzelnes Spiel über den Mülleimer löschen.
-- **Geteilt / Privat:** Der Schalter oben links legt fest, in welche Statistik die Spiele zählen. *Geteilt* wird über Supabase abgeglichen, *Privat* bleibt auf diesem Mac und hat eigene Rangliste und Namensvorschläge. Ein laufendes Spiel wandert beim Umschalten mit, beendete bleiben, wo sie gezählt wurden. Die Auswahl gilt pro Mac.
-- **Einstellungen (⌘,):** Namensliste für die Spracherkennung (z. B. „Pratiksha“, „Jafar“), Sprechtaste, Zielpunktzahl, Sounds, Startanimation, geteilte Historie, Historie löschen.
+Spieler ansagen oder tippen, dann die Sprechtaste (Standard: Leertaste) halten und die Punkte sagen: „Max 5, Oskar 0, Mila 26“. Die Werte erscheinen als Entwurf, lassen sich per Klick korrigieren, **↩** bucht die Runde. Wer die Zielpunktzahl (Standard 200) zuerst knackt, gewinnt. **⌘Z** nimmt die letzte Runde zurück, **⌘,** öffnet die Einstellungen.
 
-Die Spracherkennung (`SpeechAnalyzer` mit `DictationTranscriber`) läuft komplett auf dem Mac. Dafür braucht die App nur den Mikrofonzugriff, den sie beim ersten Start anfragt. Die Spielstände liegen in `~/Library/Application Support/Flip7Counter/library.json` (geteilt) und `library-private.json` (privat).
+Die Spracherkennung läuft komplett auf dem Mac; die App braucht dafür nur den Mikrofonzugriff, den sie beim ersten Start anfragt.
 
 ## Geteilte Historie
 
@@ -38,16 +36,11 @@ Der Key ist für Apps gedacht und kein Geheimnis. Was er darf, regeln die Polici
 ```sh
 ./scripts/build-app.sh            # baut build/Flip 7.app
 ./scripts/build-app.sh --install  # und kopiert nach /Applications
+./scripts/release.sh v2           # schneidet ein Release (bauen, zippen, auf GitHub laden)
 swift test                        # Domain- und Parser-Tests
 ```
 
 Voraussetzung: macOS 27, Xcode 27.
-
-## Updates
-
-In den Einstellungen unter *Updates* prüft **Nach Updates suchen**, ob auf GitHub neue Commits liegen, und listet sie auf. **Jetzt updaten** führt nach einer Rückfrage `git pull --ff-only` und `scripts/build-app.sh` im Projektordner aus, ersetzt die installierte App und startet sie neu. Schlägt ein Schritt fehl, läuft die alte Version weiter.
-
-Den Projektordner und den Commit schreibt `build-app.sh` in die `Info.plist` der App. Eine App, die vor dieser Funktion gebaut wurde, muss deshalb einmal von Hand neu gebaut werden. Eigene Änderungen im Projektordner blockieren das Update.
 
 ## Aufbau
 
@@ -55,5 +48,5 @@ Den Projektordner und den Commit schreibt `build-app.sh` in die `Info.plist` der
 |---|---|
 | `Sources/Flip7Core` | Domain: `Game`, `Round`, `Points`, `PlayerName`, Ansage-Parser, Historie, Speicherung und Supabase-Abgleich |
 | `Sources/Flip7` | SwiftUI-App: Views, Spracherkennung, Hotkey, Einstellungen |
-| `scripts/` | App-Bundle und Icon erzeugen |
+| `scripts/` | App-Bundle und Icon erzeugen, Release schneiden |
 | `supabase/` | SQL-Schema für die geteilte Historie |
