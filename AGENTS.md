@@ -16,9 +16,12 @@ Der Button *Einstellungen → Updates → Nach Updates suchen* zeigt den Nutzern
 swift build                       # schneller Compile-Check
 swift test                        # Domain- und Parser-Tests (Flip7Core)
 ./scripts/build-app.sh --install  # App bauen und nach /Applications kopieren
+./scripts/release.sh v2           # Release schneiden: bauen, versionieren, zippen, GitHub-Release anlegen
 ```
 
 `build-app.sh` schreibt `Flip7SourceDirectory` und `Flip7Commit` in die `Info.plist` des Bundles. Davon hängt der Update-Button ab: Die Schlüssel nicht entfernen und das Skript nicht umbenennen.
+
+`release.sh` baut darauf auf: Es entfernt `Flip7SourceDirectory` aus dem Release-ZIP (sonst würde die heruntergeladene App einen Projektordner vermuten, den es auf dem fremden Mac nicht gibt) und schreibt stattdessen `Flip7Release`.
 
 ## Regeln, die man im Code leicht übersieht
 

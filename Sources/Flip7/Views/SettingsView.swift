@@ -195,49 +195,46 @@ struct SettingsView: View {
 
     @ViewBuilder
     private var updates: some View {
-        if updater.isAvailable {
-            SettingRow("Version \(updater.commit ?? "–")", caption: updateCaption) {
-                if case .available = updater.status {
-                    Button("Jetzt updaten") {
-                        confirmation = Confirmation(
-                            title: "Jetzt updaten?",
-                            message: "Flip 7 holt die neue Version von GitHub und baut sie. Danach schließt sich die App und startet von selbst neu. Spielstände und Einstellungen bleiben erhalten.",
-                            confirm: "Updaten und neu starten",
-                            tint: Theme.yellow
-                        ) { Task { await updater.install() } }
-                    }
-                    .buttonStyle(ChunkyButtonStyle(size: 14))
-                } else {
-                    Button(updater.status == .installing ? "Update läuft …" : "Nach Updates suchen") {
-                        Task { await updater.check() }
-                    }
-                    .buttonStyle(ChunkyButtonStyle(fill: Theme.mint, size: 14))
-                    .disabled(updater.status == .checking || updater.status == .installing)
+        SettingRow("Version \(updater.versionLabel)", caption: updateCaption) {
+            if case .available = updater.status {
+                Button("Jetzt updaten") {
+                    confirmation = Confirmation(
+                        title: "Jetzt updaten?",
+                        message: updater.buildsLocally
+                            ? "Flip 7 holt die neue Version von GitHub und baut sie. Danach schließt sich die App und startet von selbst neu. Spielstände und Einstellungen bleiben erhalten."
+                            : "Flip 7 lädt die neue Version von GitHub. Danach schließt sich die App und startet von selbst neu. Spielstände und Einstellungen bleiben erhalten.",
+                        confirm: "Updaten und neu starten",
+                        tint: Theme.yellow
+                    ) { Task { await updater.install() } }
+                }
+                .buttonStyle(ChunkyButtonStyle(size: 14))
+            } else {
+                Button(updater.status == .installing ? "Update läuft …" : "Nach Updates suchen") {
+                    Task { await updater.check() }
+                }
+                .buttonStyle(ChunkyButtonStyle(fill: Theme.mint, size: 14))
+                .disabled(updater.status == .checking || updater.status == .installing)
+            }
+        }
+        if case .available(let changes) = updater.status {
+            VStack(alignment: .leading, spacing: 4) {
+                ForEach(Array(changes.prefix(8).enumerated()), id: \.offset) { _, change in
+                    Text("• \(change)").font(Theme.rounded(13, .semibold)).foregroundStyle(Theme.navy.opacity(0.75))
+                }
+                if changes.count > 8 {
+                    Text("… und \(changes.count - 8) weitere").settingCaption()
                 }
             }
-            if case .available(let changes) = updater.status {
-                VStack(alignment: .leading, spacing: 4) {
-                    ForEach(Array(changes.prefix(8).enumerated()), id: \.offset) { _, change in
-                        Text("• \(change)").font(Theme.rounded(13, .semibold)).foregroundStyle(Theme.navy.opacity(0.75))
-                    }
-                    if changes.count > 8 {
-                        Text("… und \(changes.count - 8) weitere").settingCaption()
-                    }
-                }
-            }
-        } else {
-            Text("Diese App kennt ihren Projektordner nicht. Einmal mit scripts/build-app.sh --install bauen, danach geht das Update per Knopfdruck.")
-                .settingCaption()
         }
     }
 
     private var updateCaption: String {
         switch updater.status {
-        case .idle: "Holt die neueste Version von GitHub und baut sie auf diesem Mac."
+        case .idle: updater.buildsLocally ? "Holt die neueste Version von GitHub und baut sie auf diesem Mac." : "Lädt die neueste Version von GitHub und ersetzt die App."
         case .checking: "Suche nach Updates …"
         case .upToDate: "Du hast die neueste Version 🎉"
-        case .available(let changes): changes.count == 1 ? "1 Neuerung verfügbar:" : "\(changes.count) Neuerungen verfügbar:"
-        case .installing: "Lade und baue die neue Version …"
+        case .available(let changes): changes.isEmpty ? "Neue Version verfügbar:" : changes.count == 1 ? "1 Neuerung verfügbar:" : "\(changes.count) Neuerungen verfügbar:"
+        case .installing: updater.buildsLocally ? "Lade und baue die neue Version …" : "Lade die neue Version …"
         case .failed(let message): message
         }
     }
